@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Channel {
+  id                String    @id @default(cuid())
+  handle            String    @unique
+  nameRu            String?
+  nameEn            String?
+  category          String
+  language          String
+  stance            String
+  priority          String
+  sourceType        String
+  notes             String?
+  inOriginalList    Boolean   @default(false)
+  lastScrapedAt     DateTime?
+  consecutiveErrors Int       @default(0)
+  lastError         String?
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  messages          Message[]
+
+  @@index([category])
+  @@index([priority])
+  @@index([isActive])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  channelId      String
+  channel        Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  telegramPostId String
+  text           String   @db.Text
+  views          String?
+  hasMedia       Boolean  @default(false)
+  postedAt       DateTime
+  scrapedAt      DateTime @default(now())
+  translationEn  String?  @db.Text
+  translationFi  String?  @db.Text
+  topic          String?
+  entities       Json?
+  summary        String?  @db.Text
+  llmProcessedAt DateTime?
+  llmModel       String?
+
+  @@unique([channelId, telegramPostId])
+  @@index([postedAt(sort: Desc)])
+  @@index([channelId, postedAt(sort: Desc)])
+  @@index([llmProcessedAt])
+}
+
+model ScrapeRun {
+  id                String    @id @default(cuid())
+  startedAt         DateTime  @default(now())
+  finishedAt        DateTime?
+  channelsAttempted Int       @default(0)
+  channelsSucceeded Int       @default(0)
+  channelsFailed    Int       @default(0)
+  newMessages       Int       @default(0)
+  triggeredBy       String
+  errorSummary      String?   @db.Text
+
+  @@index([startedAt(sort: Desc)])
+}

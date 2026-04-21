@@ -1,0 +1,708 @@
+# ============================================================
+# Russian Telegram OSINT — Channel Configuration
+# ============================================================
+# For a Nordic-facing OSINT aggregator (RU/UK/BY → FI/EN)
+#
+# FIELDS:
+#   handle          — the t.me/<handle> slug (without @)
+#   name_ru         — native-language name
+#   name_en         — English transliteration or name
+#   url             — scraping URL (t.me/s/ gives public HTML preview)
+#   category        — see category list below
+#   language        — ru / uk / by / en
+#   stance          — pro_kremlin / mixed / independent / opposition /
+#                     pro_ukraine / pro_belarus_opposition
+#   priority        — tier_1 (must-have), tier_2 (strong recommend),
+#                     tier_3 (nice-to-have)
+#   source_type     — official / wire / tabloid / milblogger / pmc /
+#                     independent_media / opposition_politician /
+#                     elite_analytical / business / government
+#   notes           — editorial note for the classification layer
+#   in_original_list — true if in Dimmu's screenshot, false if added
+#   verify          — true = I'm less certain of the handle; visit
+#                     t.me/s/<handle> to confirm before production use
+#
+# CATEGORIES:
+#   state_media          — RIA, TASS, RT etc. Kremlin baseline
+#   kremlin_official     — ministries, spokespeople, Medvedev, Kadyrov
+#   milblogger           — pro-war military correspondents
+#   tabloid              — Baza / SHOT / Mash-type channels
+#   pmc                  — Wagner / private military company adjacent
+#   exile_independent    — Meduza, The Insider, etc.
+#   opposition           — Navalny team, Schulmann, Katz
+#   elite_analytical     — Nezygar-type anonymous insider channels
+#   business             — Russian economic / financial coverage
+#   ukrainian            — Ukrainian-side for reaction/context
+#   belarusian           — Belarus security (direct Nordic interest)
+#
+# SOURCE BALANCE TARGET (rough, based on serious OSINT shops):
+#   ~25-30% state/official, ~20-25% milblogger, ~25-30% independent/exile,
+#   ~10-15% analytical, ~10-15% Ukrainian/Belarusian adjacent
+#
+# Last updated: 2026-04-19
+# ============================================================
+
+
+# -----------------------------------------------------------
+# TIER 1: State media — the baseline official line
+# -----------------------------------------------------------
+
+- handle: rian_ru
+  name_ru: "РИА Новости"
+  name_en: "RIA Novosti"
+  url: https://t.me/s/rian_ru
+  category: state_media
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: wire
+  notes: "State wire service. The single most important baseline source — if a line appears here, it is the sanctioned Kremlin position."
+  in_original_list: false
+
+- handle: tass_agency
+  name_ru: "ТАСС"
+  name_en: "TASS"
+  url: https://t.me/s/tass_agency
+  category: state_media
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: wire
+  notes: "Second state wire. Cross-reference with RIA — divergences between the two are themselves news."
+  in_original_list: false
+
+- handle: rt_russian
+  name_ru: "RT на русском"
+  name_en: "RT in Russian"
+  url: https://t.me/s/rt_russian
+  category: state_media
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: official
+  notes: "Domestic Russian-language RT. Different editorial tone from RT's export English channels."
+  in_original_list: false
+  verify: true
+
+- handle: truekpru
+  name_ru: "Комсомольская правда"
+  name_en: "Komsomolskaya Pravda"
+  url: https://t.me/s/truekpru
+  category: state_media
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: tabloid
+  notes: "Mass-market Kremlin-aligned tabloid. Dmitry Steshin and Alexander Kots (your Kotsnews) are KP correspondents."
+  in_original_list: false
+  verify: true
+
+- handle: izvestia
+  name_ru: "Известия"
+  name_en: "Izvestia"
+  url: https://t.me/s/izvestia
+  category: state_media
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: official
+  notes: "Traditional daily, currently state-aligned."
+  in_original_list: false
+  verify: true
+
+
+# -----------------------------------------------------------
+# TIER 1: Kremlin-direct government voices
+# -----------------------------------------------------------
+
+- handle: mod_russia
+  name_ru: "Минобороны России"
+  name_en: "Russian Ministry of Defence"
+  url: https://t.me/s/mod_russia
+  category: kremlin_official
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: government
+  notes: "Daily MoD briefings. Primary source for the Russian official military narrative. ESSENTIAL baseline."
+  in_original_list: false
+
+- handle: MID_Russia
+  name_ru: "МИД России"
+  name_en: "Russian Ministry of Foreign Affairs"
+  url: https://t.me/s/MID_Russia
+  category: kremlin_official
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: government
+  notes: "Foreign Ministry official channel. Tracks diplomatic posture toward Finland, NATO, EU directly."
+  in_original_list: false
+
+- handle: MariaVladimirovnaZakharova
+  name_ru: "Мария Захарова"
+  name_en: "Maria Zakharova"
+  url: https://t.me/s/MariaVladimirovnaZakharova
+  category: kremlin_official
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: government
+  notes: "MFA spokesperson. Sets tone of daily MFA commentary. Frequently provocative toward Nordic countries."
+  in_original_list: false
+
+- handle: medvedev_telegram
+  name_ru: "Дмитрий Медведев"
+  name_en: "Dmitry Medvedev"
+  url: https://t.me/s/medvedev_telegram
+  category: kremlin_official
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: official
+  notes: "Deputy Security Council chair. Unfiltered regime id — nuclear threats, rhetoric toward NATO and Finland. Quotable gold for Nordic audiences."
+  in_original_list: false
+  verify: true
+
+- handle: RKadyrov_95
+  name_ru: "Рамзан Кадыров"
+  name_en: "Ramzan Kadyrov"
+  url: https://t.me/s/RKadyrov_95
+  category: kremlin_official
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: official
+  notes: "Chechen leader. Always newsworthy, often unpredictable relative to Kremlin line — useful divergence signal."
+  in_original_list: false
+
+
+# -----------------------------------------------------------
+# Milbloggers — Dimmu's existing list (well covered)
+# -----------------------------------------------------------
+
+- handle: rybar
+  name_ru: "Рыбарь"
+  name_en: "Rybar"
+  url: https://t.me/s/rybar
+  category: milblogger
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: milblogger
+  notes: "Largest and most influential milblogger. Former GRU, MoD-adjacent, closely watched for narrative shifts."
+  in_original_list: true
+
+- handle: wargonzo
+  name_ru: "WarGonzo"
+  name_en: "WarGonzo"
+  url: https://t.me/s/wargonzo
+  category: milblogger
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: milblogger
+  notes: "Semyon Pegov. Prominent war correspondent, wounded in 2022, state award recipient."
+  in_original_list: true
+
+- handle: Sladkov_plus
+  name_ru: "Сладков+"
+  name_en: "Sladkov+"
+  url: https://t.me/s/Sladkov_plus
+  category: milblogger
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: milblogger
+  notes: "Alexander Sladkov, Russia-1 TV correspondent."
+  in_original_list: true
+
+- handle: epoddubny
+  name_ru: "Поддубный |Z|O|V| edition"
+  name_en: "Yevgeny Poddubny"
+  url: https://t.me/s/epoddubny
+  category: milblogger
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: milblogger
+  notes: "VGTRK war correspondent. State media milblogger."
+  in_original_list: true
+
+- handle: kotsnews
+  name_ru: "Kotsnews"
+  name_en: "Kotsnews (Kots)"
+  url: https://t.me/s/kotsnews
+  category: milblogger
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: milblogger
+  notes: "Alexander Kots, Komsomolskaya Pravda correspondent."
+  in_original_list: true
+
+- handle: dva_majors
+  name_ru: "Два майора"
+  name_en: "Two Majors"
+  url: https://t.me/s/dva_majors
+  category: milblogger
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: milblogger
+  notes: "Anonymous pair, hawkish, critical of MoD inefficiencies — useful for detecting in-camp dissent."
+  in_original_list: true
+  verify: true
+
+- handle: voenkorKotenok
+  name_ru: "Военкор Котёнок"
+  name_en: "Voenkor Kotenok"
+  url: https://t.me/s/voenkorKotenok
+  category: milblogger
+  language: ru
+  stance: pro_kremlin
+  priority: tier_3
+  source_type: milblogger
+  notes: "Yuri Kotenok, veteran war correspondent."
+  in_original_list: true
+  verify: true
+
+- handle: grey_zone
+  name_ru: "Grey Zone"
+  name_en: "Grey Zone"
+  url: https://t.me/s/grey_zone
+  category: pmc
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: pmc
+  notes: "Wagner-adjacent. Post-Prigozhin era: tone shifted, but still an important PMC-world signal."
+  in_original_list: true
+  verify: true
+
+- handle: mig41
+  name_ru: "МИГ России"
+  name_en: "MIG Rossii"
+  url: https://t.me/s/mig41
+  category: milblogger
+  language: ru
+  stance: pro_kremlin
+  priority: tier_3
+  source_type: milblogger
+  notes: "Hawkish military commentary channel."
+  in_original_list: true
+  verify: true
+
+- handle: arhangelspetznaza
+  name_ru: "АРХАНГЕЛ СПЕЦНАЗА"
+  name_en: "Arkhangel Spetsnaza"
+  url: https://t.me/s/arhangelspetznaza
+  category: milblogger
+  language: ru
+  stance: pro_kremlin
+  priority: tier_3
+  source_type: milblogger
+  notes: "Special forces-themed milblogger."
+  in_original_list: true
+  verify: true
+
+- handle: zapiski_veterana
+  name_ru: "ЗАПИСКИ VETERANA"
+  name_en: "Zapiski Veterana"
+  url: https://t.me/s/zapiski_veterana
+  category: milblogger
+  language: ru
+  stance: pro_kremlin
+  priority: tier_3
+  source_type: milblogger
+  notes: "Veteran-voice milblogger."
+  in_original_list: true
+  verify: true
+
+# NOTE: Your channels "Starshe Eddy", "Operatsiya Z: Voyenkory Russkoy Vesny",
+# and "Povyornutye na voine" are not included below because I'm not confident
+# of their exact handles. Please verify in your client and add with correct slugs.
+
+
+# -----------------------------------------------------------
+# Russia-affiliated tabloid / breaking news
+# -----------------------------------------------------------
+
+- handle: bazabazon
+  name_ru: "Baza"
+  name_en: "Baza"
+  url: https://t.me/s/bazabazon
+  category: tabloid
+  language: ru
+  stance: mixed
+  priority: tier_2
+  source_type: tabloid
+  notes: "Breaking news, often first to report domestic incidents. Opaque ownership, law enforcement sources."
+  in_original_list: true
+
+- handle: shot_shot
+  name_ru: "SHOT"
+  name_en: "SHOT"
+  url: https://t.me/s/shot_shot
+  category: tabloid
+  language: ru
+  stance: mixed
+  priority: tier_2
+  source_type: tabloid
+  notes: "Breaking-news tabloid. Similar profile to Baza."
+  in_original_list: true
+  verify: true
+
+- handle: mash
+  name_ru: "Mash"
+  name_en: "Mash"
+  url: https://t.me/s/mash
+  category: tabloid
+  language: ru
+  stance: mixed
+  priority: tier_2
+  source_type: tabloid
+  notes: "Breaking news, crime, celebrity. State-adjacent."
+  in_original_list: true
+
+
+# -----------------------------------------------------------
+# TIER 1: Exile / independent Russian press
+#   (the biggest gap in the original list)
+# -----------------------------------------------------------
+
+- handle: meduzalive
+  name_ru: "Медуза — LIVE"
+  name_en: "Meduza Live"
+  url: https://t.me/s/meduzalive
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_1
+  source_type: independent_media
+  notes: "Latvia-based. The single most important independent Russian news outlet. MUST HAVE."
+  in_original_list: false
+
+- handle: the_ins_ru
+  name_ru: "The Insider"
+  name_en: "The Insider"
+  url: https://t.me/s/the_ins_ru
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_1
+  source_type: independent_media
+  notes: "Investigative journalism. Identified Skripal and Navalny poisoning operatives with Bellingcat."
+  in_original_list: false
+
+- handle: istories_media
+  name_ru: "Важные истории"
+  name_en: "IStories (Important Stories)"
+  url: https://t.me/s/istories_media
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_1
+  source_type: independent_media
+  notes: "Investigative: elite corruption, sanctions evasion, offshore wealth. Extremely relevant for Nordic business audience."
+  in_original_list: false
+
+- handle: mediazzzona
+  name_ru: "Медиазона"
+  name_en: "Mediazona"
+  url: https://t.me/s/mediazzzona
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_1
+  source_type: independent_media
+  notes: "Court reporting, political prisoners, verified military casualty counts (with BBC). Gold standard for casualty data."
+  in_original_list: false
+
+- handle: novgaz_europe
+  name_ru: "Новая газета Европа"
+  name_en: "Novaya Gazeta Europe"
+  url: https://t.me/s/novgaz_europe
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_2
+  source_type: independent_media
+  notes: "Exile continuation of Novaya Gazeta after Russian operations were forced to close."
+  in_original_list: false
+
+- handle: tvrain
+  name_ru: "Телеканал Дождь"
+  name_en: "TV Rain / Dozhd"
+  url: https://t.me/s/tvrain
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_2
+  source_type: independent_media
+  notes: "Exile independent TV, now based in Amsterdam."
+  in_original_list: false
+
+- handle: sotaproject
+  name_ru: "SOTA"
+  name_en: "SOTA"
+  url: https://t.me/s/sotaproject
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_2
+  source_type: independent_media
+  notes: "On-the-ground coverage of protests, court cases, political persecution."
+  in_original_list: false
+
+- handle: mozhemobyasnit
+  name_ru: "Можем объяснить"
+  name_en: "We Can Explain"
+  url: https://t.me/s/mozhemobyasnit
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_3
+  source_type: independent_media
+  notes: "News explainer format, accessible and well-structured."
+  in_original_list: false
+  verify: true
+
+- handle: holodmedia
+  name_ru: "Холод"
+  name_en: "Holod"
+  url: https://t.me/s/holodmedia
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_3
+  source_type: independent_media
+  notes: "Long-form journalism focus."
+  in_original_list: false
+  verify: true
+
+
+# -----------------------------------------------------------
+# Opposition voices
+# -----------------------------------------------------------
+
+- handle: eschulmann
+  name_ru: "Екатерина Шульман"
+  name_en: "Ekaterina Schulmann"
+  url: https://t.me/s/eschulmann
+  category: opposition
+  language: ru
+  stance: opposition
+  priority: tier_1
+  source_type: elite_analytical
+  notes: "Political scientist, explicitly anti-war, widely respected across the political spectrum. Rare calm analytical voice — extremely valuable signal for foreign analysts."
+  in_original_list: false
+  verify: true
+
+- handle: maximkatz
+  name_ru: "Максим Кац"
+  name_en: "Maxim Katz"
+  url: https://t.me/s/maximkatz
+  category: opposition
+  language: ru
+  stance: opposition
+  priority: tier_2
+  source_type: opposition_politician
+  notes: "Opposition blogger with massive reach. Former Moscow municipal deputy."
+  in_original_list: false
+
+- handle: PopularPolitics
+  name_ru: "Популярная политика"
+  name_en: "Popular Politics"
+  url: https://t.me/s/PopularPolitics
+  category: opposition
+  language: ru
+  stance: opposition
+  priority: tier_2
+  source_type: opposition_politician
+  notes: "Navalny team media channel. Anti-war, anti-Kremlin, active investigative work."
+  in_original_list: false
+  verify: true
+
+- handle: zhivoigvozd
+  name_ru: "Живой гвоздь"
+  name_en: "Zhivoy Gvozd"
+  url: https://t.me/s/zhivoigvozd
+  category: opposition
+  language: ru
+  stance: opposition
+  priority: tier_3
+  source_type: independent_media
+  notes: "Exile-Echo of Moscow successor project. Liberal intelligentsia voice."
+  in_original_list: false
+  verify: true
+
+
+# -----------------------------------------------------------
+# Elite analytical / anonymous insider channels
+# TREAT WITH CAUTION — often IO instruments themselves
+# -----------------------------------------------------------
+
+- handle: russica2
+  name_ru: "Незыгарь"
+  name_en: "Nezygar"
+  url: https://t.me/s/russica2
+  category: elite_analytical
+  language: ru
+  stance: mixed
+  priority: tier_2
+  source_type: elite_analytical
+  notes: "Anonymous quasi-insider analysis of Kremlin dynamics. Read obsessively by Russia-watchers abroad. CAUTION: possibly itself an IO tool — tag output accordingly."
+  in_original_list: false
+
+- handle: kremlebezBashennik
+  name_ru: "Кремлёвский безБашенник"
+  name_en: "Kremlevsky BezBashennik"
+  url: https://t.me/s/kremlebezBashennik
+  category: elite_analytical
+  language: ru
+  stance: mixed
+  priority: tier_3
+  source_type: elite_analytical
+  notes: "Anonymous elite political analysis. Treat like Nezygar — interesting, unverified."
+  in_original_list: false
+  verify: true
+
+
+# -----------------------------------------------------------
+# Business / Economics — the Nordic differentiator
+#   (FIIA analysts, corporate risk teams actually care about this)
+# -----------------------------------------------------------
+
+- handle: thebell_io
+  name_ru: "The Bell"
+  name_en: "The Bell"
+  url: https://t.me/s/thebell_io
+  category: business
+  language: ru
+  stance: independent
+  priority: tier_1
+  source_type: business
+  notes: "Exile business journalism by Elizaveta Osetinskaya (ex-Vedomosti, ex-Forbes Russia). Primary source for Russian business/economic analysis. HIGH value for Nordic corporate audiences."
+  in_original_list: false
+
+- handle: banksta
+  name_ru: "Банкста"
+  name_en: "Banksta"
+  url: https://t.me/s/banksta
+  category: business
+  language: ru
+  stance: mixed
+  priority: tier_2
+  source_type: business
+  notes: "Russian banking and business gossip. Sanctions-evasion chatter often surfaces here first."
+  in_original_list: false
+  verify: true
+
+- handle: faridaily24
+  name_ru: "Faridaily"
+  name_en: "Faridaily (Farida Rustamova)"
+  url: https://t.me/s/faridaily24
+  category: business
+  language: ru
+  stance: independent
+  priority: tier_2
+  source_type: independent_media
+  notes: "Farida Rustamova (ex-BBC Russia, ex-Meduza). Excellent political-business analysis with real sources inside the apparat."
+  in_original_list: false
+  verify: true
+
+
+# -----------------------------------------------------------
+# Ukrainian — the other side of the conversation
+# -----------------------------------------------------------
+
+- handle: truexanewsua
+  name_ru: "Труха⚡️Украина"
+  name_en: "Trukha Ukraine"
+  url: https://t.me/s/truexanewsua
+  category: ukrainian
+  language: uk
+  stance: pro_ukraine
+  priority: tier_2
+  source_type: independent_media
+  notes: "Major Ukrainian aggregator. Russian milbloggers often react to Trukha posts within hours."
+  in_original_list: false
+  verify: true
+
+- handle: operativnoZSU
+  name_ru: "Оперативно ЗСУ"
+  name_en: "Operativno ZSU"
+  url: https://t.me/s/operativnoZSU
+  category: ukrainian
+  language: uk
+  stance: pro_ukraine
+  priority: tier_3
+  source_type: milblogger
+  notes: "Ukrainian armed forces updates."
+  in_original_list: false
+  verify: true
+
+- handle: dshv_zsu
+  name_ru: "ДШВ ЗСУ"
+  name_en: "Ukrainian Air Assault Forces"
+  url: https://t.me/s/dshv_zsu
+  category: ukrainian
+  language: uk
+  stance: pro_ukraine
+  priority: tier_3
+  source_type: government
+  notes: "Official Ukrainian Air Assault channel."
+  in_original_list: false
+  verify: true
+
+
+# -----------------------------------------------------------
+# Belarusian — direct Nordic security interest
+# -----------------------------------------------------------
+
+- handle: Hajun_BY
+  name_ru: "Беларускі Гаюн"
+  name_en: "Belarusian Hajun"
+  url: https://t.me/s/Hajun_BY
+  category: belarusian
+  language: by
+  stance: pro_belarus_opposition
+  priority: tier_1
+  source_type: independent_media
+  notes: "Tracks Russian military movements through Belarus in near-real-time. DIRECT Nordic security relevance — northern flank monitoring. Indispensable."
+  in_original_list: false
+
+- handle: nexta_tv
+  name_ru: "NEXTA"
+  name_en: "NEXTA"
+  url: https://t.me/s/nexta_tv
+  category: belarusian
+  language: ru
+  stance: pro_belarus_opposition
+  priority: tier_2
+  source_type: independent_media
+  notes: "Belarusian opposition outlet. Was central to 2020 protests, still covers Belarus + wider region."
+  in_original_list: false
+
+
+# ============================================================
+# SUMMARY — balance check for v0.1 launch
+# ============================================================
+#   State media (official):          5 channels
+#   Kremlin direct (government):     5 channels
+#   Milblogger + PMC:               11 channels (Dimmu's originals)
+#   Tabloid:                         3 channels (Dimmu's originals)
+#   Exile / independent press:       9 channels
+#   Opposition:                      4 channels
+#   Elite analytical:                2 channels
+#   Business / Economics:            3 channels
+#   Ukrainian:                       3 channels
+#   Belarusian:                      2 channels
+#   ----------------------------------------------
+#   TOTAL:                          47 channels
+#
+# Recommended v0.1 launch: all tier_1 (17 channels).
+# Expand to tier_2 as soon as pipeline is stable (~35 channels).
+# Tier_3 last. Don't feel obligated to include them all.
+# ============================================================
