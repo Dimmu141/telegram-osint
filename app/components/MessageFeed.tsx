@@ -39,13 +39,40 @@ const TOPIC_STYLES: Record<string, string> = {
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
+  kremlin_official: "Kremlin Official",
   state_media: "State Media",
-  milblogger: "Military Bloggers",
+  propagandist: "Propagandists",
+  milblogger_frontline: "Frontline Reporters",
+  milblogger_analytical: "Military Analysts",
+  milblogger: "Military Bloggers", // legacy
+  pmc: "PMC",
+  nationalist: "Nationalist",
+  tabloid: "Tabloid",
   exile_independent: "Exile / Independent",
   opposition: "Opposition",
+  elite_analytical: "Elite Analytical",
+  business: "Business",
+  ukrainian: "Ukrainian",
+  belarusian: "Belarusian",
 };
 
-const CATEGORY_ORDER = ["state_media", "milblogger", "exile_independent", "opposition"];
+const CATEGORY_ORDER = [
+  "kremlin_official",
+  "state_media",
+  "propagandist",
+  "milblogger_frontline",
+  "milblogger_analytical",
+  "milblogger",
+  "pmc",
+  "nationalist",
+  "tabloid",
+  "exile_independent",
+  "opposition",
+  "elite_analytical",
+  "business",
+  "ukrainian",
+  "belarusian",
+];
 
 function formatTimestamp(iso: string): string {
   const d = new Date(iso);

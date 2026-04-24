@@ -1,7 +1,7 @@
 # ============================================================
 # Russian Telegram OSINT — Channel Configuration
 # ============================================================
-# For a Nordic-facing OSINT aggregator (RU/UK/BY → FI/EN)
+# For a Nordic-facing OSINT aggregator (RU/UK/BY → EN)
 #
 # FIELDS:
 #   handle          — the t.me/<handle> slug (without @)
@@ -16,18 +16,21 @@
 #                     tier_3 (nice-to-have)
 #   source_type     — official / wire / tabloid / milblogger / pmc /
 #                     independent_media / opposition_politician /
-#                     elite_analytical / business / government
+#                     elite_analytical / business / government / propagandist
 #   notes           — editorial note for the classification layer
 #   in_original_list — true if in Dimmu's screenshot, false if added
-#   verify          — true = I'm less certain of the handle; visit
-#                     t.me/s/<handle> to confirm before production use
+#   verify          — true = I'm less certain of the handle; confirm at
+#                     t.me/s/<handle> before production use
 #
 # CATEGORIES:
-#   state_media          — RIA, TASS, RT etc. Kremlin baseline
-#   kremlin_official     — ministries, spokespeople, Medvedev, Kadyrov
-#   milblogger           — pro-war military correspondents
-#   tabloid              — Baza / SHOT / Mash-type channels
+#   state_media          — TASS, RIA, RT etc. Institutional Kremlin baseline
+#   kremlin_official     — Ministries, spokespeople, Medvedev, Kadyrov
+#   propagandist         — Personality-driven propaganda (Solovyov, Simonyan)
+#   milblogger_frontline — Embedded/combat reporters physically near the front
+#   milblogger_analytical— Commentary, maps, tactical summaries from distance
 #   pmc                  — Wagner / private military company adjacent
+#   nationalist          — Ultranationalist / ideological (Tsargrad, Malofeev)
+#   tabloid              — Baza / SHOT / Mash-type breaking news
 #   exile_independent    — Meduza, The Insider, etc.
 #   opposition           — Navalny team, Schulmann, Katz
 #   elite_analytical     — Nezygar-type anonymous insider channels
@@ -35,16 +38,12 @@
 #   ukrainian            — Ukrainian-side for reaction/context
 #   belarusian           — Belarus security (direct Nordic interest)
 #
-# SOURCE BALANCE TARGET (rough, based on serious OSINT shops):
-#   ~25-30% state/official, ~20-25% milblogger, ~25-30% independent/exile,
-#   ~10-15% analytical, ~10-15% Ukrainian/Belarusian adjacent
-#
-# Last updated: 2026-04-19
+# Last updated: 2026-04-21
 # ============================================================
 
 
 # -----------------------------------------------------------
-# TIER 1: State media — the baseline official line
+# STATE MEDIA — institutional Kremlin baseline
 # -----------------------------------------------------------
 
 - handle: rian_ru
@@ -56,7 +55,7 @@
   stance: pro_kremlin
   priority: tier_1
   source_type: wire
-  notes: "State wire service. The single most important baseline source — if a line appears here, it is the sanctioned Kremlin position."
+  notes: "State wire service. The single most important baseline — if a line appears here, it is the sanctioned Kremlin position."
   in_original_list: false
 
 - handle: tass_agency
@@ -93,7 +92,7 @@
   stance: pro_kremlin
   priority: tier_2
   source_type: tabloid
-  notes: "Mass-market Kremlin-aligned tabloid. Dmitry Steshin and Alexander Kots (your Kotsnews) are KP correspondents."
+  notes: "Mass-market Kremlin-aligned tabloid. Dmitry Steshin and Alexander Kots are KP correspondents."
   in_original_list: false
   verify: true
 
@@ -112,7 +111,7 @@
 
 
 # -----------------------------------------------------------
-# TIER 1: Kremlin-direct government voices
+# KREMLIN OFFICIAL — direct government voices
 # -----------------------------------------------------------
 
 - handle: mod_russia
@@ -160,7 +159,7 @@
   stance: pro_kremlin
   priority: tier_1
   source_type: official
-  notes: "Deputy Security Council chair. Unfiltered regime id — nuclear threats, rhetoric toward NATO and Finland. Quotable gold for Nordic audiences."
+  notes: "Deputy Security Council chair. Nuclear threats, rhetoric toward NATO and Finland. Quotable gold for Nordic audiences."
   in_original_list: false
   verify: true
 
@@ -178,74 +177,206 @@
 
 
 # -----------------------------------------------------------
-# Milbloggers — Dimmu's existing list (well covered)
+# PROPAGANDIST — personality-driven propaganda channels
+# Distinct from state_media: these are individuals, not institutions.
+# They often set the rhetorical agenda BEFORE it appears in official media.
 # -----------------------------------------------------------
 
-- handle: rybar
-  name_ru: "Рыбарь"
-  name_en: "Rybar"
-  url: https://t.me/s/rybar
-  category: milblogger
+- handle: SolovievLive
+  name_ru: "Соловьёв LIVE"
+  name_en: "Solovyov LIVE"
+  url: https://t.me/s/SolovievLive
+  category: propagandist
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: propagandist
+  notes: "Vladimir Solovyov — the most-watched TV propagandist. His channel is the prime-time barometer of Kremlin escalation rhetoric. Daily bellwether for tone shifts."
+  in_original_list: false
+
+- handle: m_simonyan
+  name_ru: "Маргарита Симоньян"
+  name_en: "Margarita Simonyan"
+  url: https://t.me/s/m_simonyan
+  category: propagandist
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: propagandist
+  notes: "RT editor-in-chief. Personal channel often used to float trial balloons before they become official RT line. Frequently threatens Western/Nordic countries."
+  in_original_list: false
+
+- handle: mardan_m
+  name_ru: "Сергей Мардан"
+  name_en: "Sergey Mardan"
+  url: https://t.me/s/mardan_m
+  category: propagandist
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: propagandist
+  notes: "Daily propagandist commentator. Often more inflammatory than Solovyov."
+  in_original_list: false
+  verify: true
+
+- handle: rogozin
+  name_ru: "Дмитрий Рогозин"
+  name_en: "Dmitry Rogozin"
+  url: https://t.me/s/rogozin
+  category: propagandist
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: propagandist
+  notes: "Former Roscosmos chief, now head of Tsar's Wolves in Donetsk. Mix of frontline propaganda and nationalist posturing."
+  in_original_list: false
+  verify: true
+
+
+# -----------------------------------------------------------
+# MILBLOGGER — FRONTLINE REPORTERS
+# Physically embedded or close to combat zones.
+# Their reports are raw, often contradict MoD briefings.
+# -----------------------------------------------------------
+
+- handle: yurasumy
+  name_ru: "Юрий Подоляка"
+  name_en: "Yury Podolyaka"
+  url: https://t.me/s/yurasumy
+  category: milblogger_frontline
   language: ru
   stance: pro_kremlin
   priority: tier_1
   source_type: milblogger
-  notes: "Largest and most influential milblogger. Former GRU, MoD-adjacent, closely watched for narrative shifts."
-  in_original_list: true
+  notes: "Ukrainian-born pro-Russian commentator. Daily map-based frontline summaries with huge audience. One of the most-followed conflict channels. MUST HAVE."
+  in_original_list: false
+
+- handle: readovkanews
+  name_ru: "Readovka"
+  name_en: "Readovka"
+  url: https://t.me/s/readovkanews
+  category: milblogger_frontline
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: milblogger
+  notes: "Major nationalist news outlet with own field reporters. Often breaks frontline developments before MoD admits them."
+  in_original_list: false
 
 - handle: wargonzo
   name_ru: "WarGonzo"
   name_en: "WarGonzo"
   url: https://t.me/s/wargonzo
-  category: milblogger
+  category: milblogger_frontline
   language: ru
   stance: pro_kremlin
   priority: tier_1
   source_type: milblogger
-  notes: "Semyon Pegov. Prominent war correspondent, wounded in 2022, state award recipient."
+  notes: "Semyon Pegov. Prominent war correspondent, wounded in 2022, state award recipient. Physically embedded."
   in_original_list: true
 
 - handle: Sladkov_plus
   name_ru: "Сладков+"
   name_en: "Sladkov+"
   url: https://t.me/s/Sladkov_plus
-  category: milblogger
+  category: milblogger_frontline
   language: ru
   stance: pro_kremlin
   priority: tier_2
   source_type: milblogger
-  notes: "Alexander Sladkov, Russia-1 TV correspondent."
+  notes: "Alexander Sladkov, Russia-1 TV war correspondent. Embedded with Russian units."
   in_original_list: true
 
 - handle: epoddubny
   name_ru: "Поддубный |Z|O|V| edition"
   name_en: "Yevgeny Poddubny"
   url: https://t.me/s/epoddubny
-  category: milblogger
+  category: milblogger_frontline
   language: ru
   stance: pro_kremlin
   priority: tier_2
   source_type: milblogger
-  notes: "VGTRK war correspondent. State media milblogger."
+  notes: "VGTRK war correspondent. Embedded state media milblogger."
   in_original_list: true
 
 - handle: kotsnews
   name_ru: "Kotsnews"
   name_en: "Kotsnews (Kots)"
   url: https://t.me/s/kotsnews
-  category: milblogger
+  category: milblogger_frontline
   language: ru
   stance: pro_kremlin
   priority: tier_2
   source_type: milblogger
-  notes: "Alexander Kots, Komsomolskaya Pravda correspondent."
+  notes: "Alexander Kots, Komsomolskaya Pravda field correspondent."
   in_original_list: true
+
+- handle: voenkorKotenok
+  name_ru: "Военкор Котёнок"
+  name_en: "Voenkor Kotenok"
+  url: https://t.me/s/voenkorKotenok
+  category: milblogger_frontline
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: milblogger
+  notes: "Yuri Kotenok, veteran war correspondent."
+  in_original_list: true
+  verify: true
+
+- handle: arhangelspetznaza
+  name_ru: "АРХАНГЕЛ СПЕЦНАЗА"
+  name_en: "Arkhangel Spetsnaza"
+  url: https://t.me/s/arhangelspetznaza
+  category: milblogger_frontline
+  language: ru
+  stance: pro_kremlin
+  priority: tier_3
+  source_type: milblogger
+  notes: "Special forces-adjacent milblogger. Frontline claims, verify carefully."
+  in_original_list: true
+  verify: true
+
+# NOTE: "Старше Эдды" (Starishe Eddy) and "Повёрнутые на войне" (Povernutye na Voine)
+# were in the original list but their handles are unconfirmed.
+# Visit t.me to find the exact slug before adding.
+
+
+# -----------------------------------------------------------
+# MILBLOGGER — ANALYTICAL
+# Commentary, maps, tactical summaries. Not embedded at the front.
+# Often more reliable for broader operational picture than frontline reporters.
+# -----------------------------------------------------------
+
+- handle: rybar
+  name_ru: "Рыбарь"
+  name_en: "Rybar"
+  url: https://t.me/s/rybar
+  category: milblogger_analytical
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: milblogger
+  notes: "Largest and most influential milblogger. Former MoD-adjacent. Closely watched for narrative shifts — divergences from official MoD line are significant."
+  in_original_list: true
+
+- handle: boris_rozhin
+  name_ru: "Полковник Кассад"
+  name_en: "Colonel Cassad (Boris Rozhin)"
+  url: https://t.me/s/boris_rozhin
+  category: milblogger_analytical
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: milblogger
+  notes: "Heavyweight military analyst. Frequently cross-referenced by other milbloggers as authoritative. Strong geopolitical framing."
+  in_original_list: false
 
 - handle: dva_majors
   name_ru: "Два майора"
   name_en: "Two Majors"
   url: https://t.me/s/dva_majors
-  category: milblogger
+  category: milblogger_analytical
   language: ru
   stance: pro_kremlin
   priority: tier_2
@@ -254,18 +385,60 @@
   in_original_list: true
   verify: true
 
-- handle: voenkorKotenok
-  name_ru: "Военкор Котёнок"
-  name_en: "Voenkor Kotenok"
-  url: https://t.me/s/voenkorKotenok
-  category: milblogger
+- handle: milchronicles
+  name_ru: "Военная хроника"
+  name_en: "Military Chronicle"
+  url: https://t.me/s/milchronicles
+  category: milblogger_analytical
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: milblogger
+  notes: "Equipment, losses, tactical analysis focus. Careful cross-source approach."
+  in_original_list: false
+
+- handle: milinfolive
+  name_ru: "Военный Осведомитель"
+  name_en: "Voenniy Osvedomitel"
+  url: https://t.me/s/milinfolive
+  category: milblogger_analytical
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: milblogger
+  notes: "Military informer. Active equipment and order-of-battle analysis."
+  in_original_list: false
+
+- handle: mig41
+  name_ru: "МИГ России"
+  name_en: "MIG Rossii"
+  url: https://t.me/s/mig41
+  category: milblogger_analytical
   language: ru
   stance: pro_kremlin
   priority: tier_3
   source_type: milblogger
-  notes: "Yuri Kotenok, veteran war correspondent."
+  notes: "Hawkish military commentary channel."
   in_original_list: true
   verify: true
+
+- handle: zapiski_veterana
+  name_ru: "ЗАПИСКИ VETERANA"
+  name_en: "Zapiski Veterana"
+  url: https://t.me/s/zapiski_veterana
+  category: milblogger_analytical
+  language: ru
+  stance: pro_kremlin
+  priority: tier_3
+  source_type: milblogger
+  notes: "Veteran-voice analytical channel."
+  in_original_list: true
+  verify: true
+
+
+# -----------------------------------------------------------
+# PMC — private military company adjacent
+# -----------------------------------------------------------
 
 - handle: grey_zone
   name_ru: "Grey Zone"
@@ -276,56 +449,47 @@
   stance: pro_kremlin
   priority: tier_2
   source_type: pmc
-  notes: "Wagner-adjacent. Post-Prigozhin era: tone shifted, but still an important PMC-world signal."
+  notes: "Wagner-adjacent. Post-Prigozhin era: tone shifted but still an important PMC-world signal."
   in_original_list: true
   verify: true
 
-- handle: mig41
-  name_ru: "МИГ России"
-  name_en: "MIG Rossii"
-  url: https://t.me/s/mig41
-  category: milblogger
+- handle: rsotmdnr
+  name_ru: "Обратная сторона медали"
+  name_en: "Reverse Side of the Medal (RSOTM)"
+  url: https://t.me/s/rsotmdnr
+  category: pmc
   language: ru
   stance: pro_kremlin
-  priority: tier_3
-  source_type: milblogger
-  notes: "Hawkish military commentary channel."
-  in_original_list: true
+  priority: tier_2
+  source_type: pmc
+  notes: "Wagner-adjacent successor channel post-Prigozhin. PMC activity and nationalist military commentary."
+  in_original_list: false
   verify: true
-
-- handle: arhangelspetznaza
-  name_ru: "АРХАНГЕЛ СПЕЦНАЗА"
-  name_en: "Arkhangel Spetsnaza"
-  url: https://t.me/s/arhangelspetznaza
-  category: milblogger
-  language: ru
-  stance: pro_kremlin
-  priority: tier_3
-  source_type: milblogger
-  notes: "Special forces-themed milblogger."
-  in_original_list: true
-  verify: true
-
-- handle: zapiski_veterana
-  name_ru: "ЗАПИСКИ VETERANA"
-  name_en: "Zapiski Veterana"
-  url: https://t.me/s/zapiski_veterana
-  category: milblogger
-  language: ru
-  stance: pro_kremlin
-  priority: tier_3
-  source_type: milblogger
-  notes: "Veteran-voice milblogger."
-  in_original_list: true
-  verify: true
-
-# NOTE: Your channels "Starshe Eddy", "Operatsiya Z: Voyenkory Russkoy Vesny",
-# and "Povyornutye na voine" are not included below because I'm not confident
-# of their exact handles. Please verify in your client and add with correct slugs.
 
 
 # -----------------------------------------------------------
-# Russia-affiliated tabloid / breaking news
+# NATIONALIST — ultranationalist / ideological channels
+# Different from propagandist (personality) or milblogger (combat focus).
+# These are ideologically-driven, often more extreme than Kremlin line.
+# -----------------------------------------------------------
+
+- handle: tsargradtv
+  name_ru: "Царьград"
+  name_en: "Tsargrad TV"
+  url: https://t.me/s/tsargradtv
+  category: nationalist
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: propagandist
+  notes: "Konstantin Malofeev's ultranationalist Orthodox-imperialist outlet. More extreme than Kremlin mainstream. Useful for tracking the hard-right fringe that sometimes shapes future Kremlin positions."
+  in_original_list: false
+
+
+# -----------------------------------------------------------
+# TABLOID — breaking news, crime, celebrity
+# Demoted to tier_3: mostly non-conflict domestic content.
+# Keep for tracking protests, domestic incidents, drone strikes inside Russia.
 # -----------------------------------------------------------
 
 - handle: bazabazon
@@ -335,9 +499,9 @@
   category: tabloid
   language: ru
   stance: mixed
-  priority: tier_2
+  priority: tier_3
   source_type: tabloid
-  notes: "Breaking news, often first to report domestic incidents. Opaque ownership, law enforcement sources."
+  notes: "Breaking news, often first on domestic incidents. Law enforcement sources. Mostly non-conflict content."
   in_original_list: true
 
 - handle: shot_shot
@@ -347,7 +511,7 @@
   category: tabloid
   language: ru
   stance: mixed
-  priority: tier_2
+  priority: tier_3
   source_type: tabloid
   notes: "Breaking-news tabloid. Similar profile to Baza."
   in_original_list: true
@@ -360,15 +524,14 @@
   category: tabloid
   language: ru
   stance: mixed
-  priority: tier_2
+  priority: tier_3
   source_type: tabloid
-  notes: "Breaking news, crime, celebrity. State-adjacent."
+  notes: "Breaking news, crime, celebrity. State-adjacent. Mostly noise."
   in_original_list: true
 
 
 # -----------------------------------------------------------
-# TIER 1: Exile / independent Russian press
-#   (the biggest gap in the original list)
+# EXILE / INDEPENDENT Russian press
 # -----------------------------------------------------------
 
 - handle: meduzalive
@@ -483,7 +646,7 @@
 
 
 # -----------------------------------------------------------
-# Opposition voices
+# OPPOSITION voices
 # -----------------------------------------------------------
 
 - handle: eschulmann
@@ -495,7 +658,7 @@
   stance: opposition
   priority: tier_1
   source_type: elite_analytical
-  notes: "Political scientist, explicitly anti-war, widely respected across the political spectrum. Rare calm analytical voice — extremely valuable signal for foreign analysts."
+  notes: "Political scientist, anti-war, widely respected across the political spectrum. Rare calm analytical voice."
   in_original_list: false
   verify: true
 
@@ -539,7 +702,7 @@
 
 
 # -----------------------------------------------------------
-# Elite analytical / anonymous insider channels
+# ELITE ANALYTICAL — anonymous insider channels
 # TREAT WITH CAUTION — often IO instruments themselves
 # -----------------------------------------------------------
 
@@ -552,7 +715,7 @@
   stance: mixed
   priority: tier_2
   source_type: elite_analytical
-  notes: "Anonymous quasi-insider analysis of Kremlin dynamics. Read obsessively by Russia-watchers abroad. CAUTION: possibly itself an IO tool — tag output accordingly."
+  notes: "Anonymous quasi-insider analysis of Kremlin dynamics. CAUTION: possibly itself an IO tool."
   in_original_list: false
 
 - handle: kremlebezBashennik
@@ -570,8 +733,7 @@
 
 
 # -----------------------------------------------------------
-# Business / Economics — the Nordic differentiator
-#   (FIIA analysts, corporate risk teams actually care about this)
+# BUSINESS / ECONOMICS
 # -----------------------------------------------------------
 
 - handle: thebell_io
@@ -583,7 +745,7 @@
   stance: independent
   priority: tier_1
   source_type: business
-  notes: "Exile business journalism by Elizaveta Osetinskaya (ex-Vedomosti, ex-Forbes Russia). Primary source for Russian business/economic analysis. HIGH value for Nordic corporate audiences."
+  notes: "Exile business journalism by Elizaveta Osetinskaya. Primary source for Russian business/economic analysis."
   in_original_list: false
 
 - handle: banksta
@@ -608,13 +770,13 @@
   stance: independent
   priority: tier_2
   source_type: independent_media
-  notes: "Farida Rustamova (ex-BBC Russia, ex-Meduza). Excellent political-business analysis with real sources inside the apparat."
+  notes: "Ex-BBC Russia, ex-Meduza. Political-business analysis with real sources inside the apparat."
   in_original_list: false
   verify: true
 
 
 # -----------------------------------------------------------
-# Ukrainian — the other side of the conversation
+# UKRAINIAN — the other side of the conversation
 # -----------------------------------------------------------
 
 - handle: truexanewsua
@@ -658,7 +820,7 @@
 
 
 # -----------------------------------------------------------
-# Belarusian — direct Nordic security interest
+# BELARUSIAN — direct Nordic security interest
 # -----------------------------------------------------------
 
 - handle: Hajun_BY
@@ -670,7 +832,7 @@
   stance: pro_belarus_opposition
   priority: tier_1
   source_type: independent_media
-  notes: "Tracks Russian military movements through Belarus in near-real-time. DIRECT Nordic security relevance — northern flank monitoring. Indispensable."
+  notes: "Tracks Russian military movements through Belarus in near-real-time. DIRECT Nordic security relevance."
   in_original_list: false
 
 - handle: nexta_tv
@@ -687,22 +849,25 @@
 
 
 # ============================================================
-# SUMMARY — balance check for v0.1 launch
+# SUMMARY — channel count by category
 # ============================================================
-#   State media (official):          5 channels
-#   Kremlin direct (government):     5 channels
-#   Milblogger + PMC:               11 channels (Dimmu's originals)
-#   Tabloid:                         3 channels (Dimmu's originals)
-#   Exile / independent press:       9 channels
-#   Opposition:                      4 channels
-#   Elite analytical:                2 channels
-#   Business / Economics:            3 channels
-#   Ukrainian:                       3 channels
-#   Belarusian:                      2 channels
-#   ----------------------------------------------
-#   TOTAL:                          47 channels
+#   State media:                5 channels
+#   Kremlin official:           5 channels
+#   Propagandist (NEW):         4 channels  ← Solovyov, Simonyan, Mardan, Rogozin
+#   Milblogger frontline (NEW): 8 channels  ← incl. Podolyaka, Readovka
+#   Milblogger analytical (NEW):7 channels  ← incl. Rozhin, Mil.Chronicle, Osvedomitel
+#   PMC:                        2 channels  ← incl. RSOTM
+#   Nationalist (NEW):          1 channel   ← Tsargrad
+#   Tabloid (demoted tier_3):   3 channels
+#   Exile / independent:        9 channels
+#   Opposition:                 4 channels
+#   Elite analytical:           2 channels
+#   Business:                   3 channels
+#   Ukrainian:                  3 channels
+#   Belarusian:                 2 channels
+#   -----------------------------------------------
+#   TOTAL:                     58 channels (+11 from v0.1)
 #
-# Recommended v0.1 launch: all tier_1 (17 channels).
-# Expand to tier_2 as soon as pipeline is stable (~35 channels).
-# Tier_3 last. Don't feel obligated to include them all.
+# Channels with verify:true — confirm handles at t.me/s/<handle>
+# before assuming they are scraping correctly.
 # ============================================================
