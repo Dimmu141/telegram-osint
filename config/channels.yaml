@@ -194,43 +194,41 @@
   notes: "Vladimir Solovyov — the most-watched TV propagandist. His channel is the prime-time barometer of Kremlin escalation rhetoric. Daily bellwether for tone shifts."
   in_original_list: false
 
-- handle: m_simonyan
+- handle: margaritasimonyan
   name_ru: "Маргарита Симоньян"
   name_en: "Margarita Simonyan"
-  url: https://t.me/s/m_simonyan
+  url: https://t.me/s/margaritasimonyan
   category: propagandist
   language: ru
   stance: pro_kremlin
   priority: tier_1
   source_type: propagandist
-  notes: "RT editor-in-chief. Personal channel often used to float trial balloons before they become official RT line. Frequently threatens Western/Nordic countries."
+  notes: "RT editor-in-chief. 532K subscribers. Personal channel often used to float trial balloons before they become official RT line. Frequently threatens Western/Nordic countries."
   in_original_list: false
 
-- handle: mardan_m
-  name_ru: "Сергей Мардан"
-  name_en: "Sergey Mardan"
-  url: https://t.me/s/mardan_m
+- handle: logikamarkova
+  name_ru: "Логика Маркова"
+  name_en: "Logika Markova (Sergey Markov)"
+  url: https://t.me/s/logikamarkova
   category: propagandist
   language: ru
   stance: pro_kremlin
   priority: tier_2
   source_type: propagandist
-  notes: "Daily propagandist commentator. Often more inflammatory than Solovyov."
+  notes: "Sergey Markov — political scientist and frequent TV pundit. 58K subscribers. Carries foreign-agent disclaimer. Often floats hardline talking points before they become official."
   in_original_list: false
-  verify: true
 
-- handle: rogozin
-  name_ru: "Дмитрий Рогозин"
-  name_en: "Dmitry Rogozin"
-  url: https://t.me/s/rogozin
+- handle: medvedevvesti
+  name_ru: "Андрей Медведев"
+  name_en: "Andrey Medvedev"
+  url: https://t.me/s/medvedevvesti
   category: propagandist
   language: ru
   stance: pro_kremlin
   priority: tier_2
   source_type: propagandist
-  notes: "Former Roscosmos chief, now head of Tsar's Wolves in Donetsk. Mix of frontline propaganda and nationalist posturing."
+  notes: "VGTRK journalist and Moscow City Duma deputy. 180K subscribers. Hawkish nationalist commentary, frequently forwards MoD messaging."
   in_original_list: false
-  verify: true
 
 
 # -----------------------------------------------------------
@@ -385,17 +383,6 @@
   in_original_list: true
   verify: true
 
-- handle: milchronicles
-  name_ru: "Военная хроника"
-  name_en: "Military Chronicle"
-  url: https://t.me/s/milchronicles
-  category: milblogger_analytical
-  language: ru
-  stance: pro_kremlin
-  priority: tier_2
-  source_type: milblogger
-  notes: "Equipment, losses, tactical analysis focus. Careful cross-source approach."
-  in_original_list: false
 
 - handle: milinfolive
   name_ru: "Военный Осведомитель"
@@ -823,17 +810,6 @@
 # BELARUSIAN — direct Nordic security interest
 # -----------------------------------------------------------
 
-- handle: Hajun_BY
-  name_ru: "Беларускі Гаюн"
-  name_en: "Belarusian Hajun"
-  url: https://t.me/s/Hajun_BY
-  category: belarusian
-  language: by
-  stance: pro_belarus_opposition
-  priority: tier_1
-  source_type: independent_media
-  notes: "Tracks Russian military movements through Belarus in near-real-time. DIRECT Nordic security relevance."
-  in_original_list: false
 
 - handle: nexta_tv
   name_ru: "NEXTA"
@@ -851,23 +827,23 @@
 # ============================================================
 # SUMMARY — channel count by category
 # ============================================================
-#   State media:                5 channels
-#   Kremlin official:           5 channels
-#   Propagandist (NEW):         4 channels  ← Solovyov, Simonyan, Mardan, Rogozin
-#   Milblogger frontline (NEW): 8 channels  ← incl. Podolyaka, Readovka
-#   Milblogger analytical (NEW):7 channels  ← incl. Rozhin, Mil.Chronicle, Osvedomitel
-#   PMC:                        2 channels  ← incl. RSOTM
-#   Nationalist (NEW):          1 channel   ← Tsargrad
-#   Tabloid (demoted tier_3):   3 channels
-#   Exile / independent:        9 channels
-#   Opposition:                 4 channels
+#   State media:                5 channels  (rt_russian preview-disabled → 0 msgs)
+#   Kremlin official:           5 channels  (medvedev_telegram may need recheck)
+#   Propagandist:               4 channels  ← Solovyov, Simonyan, Markov, A.Medvedev
+#   Milblogger frontline:       8 channels  ← incl. Podolyaka, Readovka
+#   Milblogger analytical:      6 channels  ← incl. Rozhin, Osvedomitel
+#   PMC:                        2 channels  ← grey_zone (preview-disabled), rsotmdnr
+#   Nationalist:                1 channel   ← Tsargrad
+#   Tabloid (tier_3):           3 channels
+#   Exile / independent:        9 channels  (the_ins_ru, novgaz_europe preview-disabled)
+#   Opposition:                 4 channels  (PopularPolitics preview-disabled)
 #   Elite analytical:           2 channels
 #   Business:                   3 channels
 #   Ukrainian:                  3 channels
-#   Belarusian:                 2 channels
+#   Belarusian:                 1 channel   (Hajun_BY stopped operating, removed)
 #   -----------------------------------------------
-#   TOTAL:                     58 channels (+11 from v0.1)
+#   TOTAL:                     56 channels
 #
-# Channels with verify:true — confirm handles at t.me/s/<handle>
-# before assuming they are scraping correctly.
+# Channels marked "preview-disabled" have correct handles but t.me/s/ returns
+# no tgme_widget_message HTML — our scraper cannot reach them.
 # ============================================================

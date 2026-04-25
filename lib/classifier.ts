@@ -18,6 +18,9 @@ const MAX_MESSAGES_PER_RUN = 500;
 
 const TOPICS = [
   "military_operations",
+  "casualties_losses",
+  "escalation_rhetoric",
+  "nordic_relevance",
   "political_domestic",
   "political_foreign",
   "economic",
@@ -29,6 +32,9 @@ const TOPICS = [
 ] as const;
 
 type Topic = (typeof TOPICS)[number];
+
+const SIGNIFICANCE_LEVELS = ["low", "medium", "high", "critical"] as const;
+type Significance = (typeof SIGNIFICANCE_LEVELS)[number];
 
 interface MessageInput {
   id: string;
@@ -42,6 +48,7 @@ interface ClassifiedMessage {
   id: string;
   translation_en: string;
   topic: Topic;
+  significance: Significance;
   entities: {
     people: string[];
     locations: string[];
@@ -62,8 +69,22 @@ const SYSTEM_PROMPT = `You are an OSINT analyst providing intelligence support t
 For each message you receive, provide:
 1. An accurate English translation preserving tone, military terminology, and propaganda framing
 2. Topic classification from the provided list
-3. Named entity extraction
-4. A 2-3 sentence analytical summary in English that notes: what is claimed, how it is framed, and what a Nordic analyst should note
+3. A significance rating (low | medium | high | critical) — see scale below
+4. Named entity extraction
+5. A 2-3 sentence analytical summary in English that notes: what is claimed, how it is framed, and what a Nordic analyst should note. AVOID formulaic openers like "Nordic analysts should note..." — write each summary naturally.
+
+SIGNIFICANCE SCALE:
+- low: routine state-media noise, ceremonial content, propaganda boilerplate, daily ribbon-cutting
+- medium: standard frontline updates, ordinary political commentary, typical economic news
+- high: confirmed casualties, equipment losses, named operations, escalation rhetoric, sanctions impact, Nordic/NATO-relevant moves, high-profile elite statements
+- critical: nuclear threats, strategic strikes, major escalations, infrastructure attacks, direct Nordic/Finnish references, leadership change signals, war-ending or war-expanding events
+
+TOPIC GUIDANCE:
+- casualties_losses: confirmed or claimed deaths, equipment destroyed, POW exchanges
+- escalation_rhetoric: nuclear threats, threats against NATO/Nordic states, calls for expansion of war
+- nordic_relevance: any direct mention of Finland, Sweden, Norway, Denmark, Baltic states, Arctic, Nordic NATO posture
+- propaganda: pure ideological/agitprop content with no news substance
+- military_operations: factual front-line developments
 
 Be precise with military terminology. Do not soften propaganda language — translate it accurately so analysts can see how it is framed.
 
@@ -87,6 +108,7 @@ Return a JSON object with a "results" array where each element has:
 - id (string, unchanged from input)
 - translation_en (string)
 - topic (string, one of the topic options)
+- significance (string, one of: low, medium, high, critical)
 - entities (object with arrays: people, locations, organizations, weapons)
 - summary (string, 2-3 sentences analytical summary in English)
 
@@ -238,6 +260,7 @@ async function writeResults(
         data: {
           translationEn: r.translation_en,
           topic: r.topic,
+          significance: (SIGNIFICANCE_LEVELS as readonly string[]).includes(r.significance) ? r.significance : "medium",
           entities: r.entities,
           summary: r.summary,
           llmProcessedAt: new Date(),

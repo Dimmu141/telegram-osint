@@ -16,6 +16,7 @@ export default async function Home() {
       id: true,
       translationEn: true,
       topic: true,
+      significance: true,
       entities: true,
       summary: true,
       postedAt: true,
