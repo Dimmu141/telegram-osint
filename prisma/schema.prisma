@@ -59,6 +59,16 @@ model Message {
   @@index([significance])
 }
 
+model Briefing {
+  id           String   @id @default(cuid())
+  date         String   @unique
+  bullets      Json
+  generatedAt  DateTime @default(now())
+  messageCount Int      @default(0)
+
+  @@index([date])
+}
+
 model ScrapeRun {
   id                String    @id @default(cuid())
   startedAt         DateTime  @default(now())
