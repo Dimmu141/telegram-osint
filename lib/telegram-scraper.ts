@@ -65,8 +65,13 @@ const USER_AGENT =
 
 const FETCH_TIMEOUT_MS = 15_000;
 
-async function fetchChannelHtml(handle: string): Promise<string> {
-  const url = `https://t.me/s/${handle}`;
+async function fetchChannelHtml(
+  handle: string,
+  before?: string
+): Promise<string> {
+  const url = before
+    ? `https://t.me/s/${handle}?before=${before}`
+    : `https://t.me/s/${handle}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -208,6 +213,89 @@ async function insertNewMessages(
   return result.count;
 }
 
+// Pagination tuning. t.me/s/ returns ~20 messages per page; fetching up to 5
+// pages catches up to ~100 messages per channel per scrape — enough for even
+// the most active milbloggers (Rybar, Readovka, Podolyaka) during a 30-min
+// scrape interval.
+const MAX_PAGES_PER_CHANNEL = 5;
+const PAGE_DELAY_MS = 400;
+// Don't paginate further back than ~26 hours — the feed only shows 24h.
+const PAGINATION_CUTOFF_MS = 26 * 60 * 60 * 1000;
+
+/**
+ * Fetches messages from a channel with `?before=<post_id>` pagination.
+ *
+ * Strategy:
+ *   1. Fetch the latest page (newest 20 messages).
+ *   2. If the oldest message on this page is still newer than what we already
+ *      have in the DB (and not too old to matter), fetch the next page using
+ *      the oldest post ID as the `?before=` cursor.
+ *   3. Stop when we hit a known message, hit the age cutoff, or hit MAX_PAGES.
+ */
+async function fetchAllNewMessages(
+  prisma: PrismaClient,
+  channelId: string,
+  handle: string
+): Promise<{ messages: ParsedMessage[]; pagesFetched: number }> {
+  // What's the most recent message we already have stored?
+  const newestExisting = await prisma.message.findFirst({
+    where: { channelId },
+    orderBy: { postedAt: "desc" },
+    select: { telegramPostId: true, postedAt: true },
+  });
+
+  const cutoff = new Date(Date.now() - PAGINATION_CUTOFF_MS);
+  const collected: ParsedMessage[] = [];
+  const seen = new Set<string>();
+  let cursor: string | undefined = undefined;
+  let stop = false;
+  let pagesFetched = 0;
+
+  for (let page = 0; page < MAX_PAGES_PER_CHANNEL && !stop; page++) {
+    const html = await fetchChannelHtml(handle, cursor);
+    const parsed = parseMessages(html);
+    pagesFetched++;
+    if (parsed.length === 0) break;
+
+    // Telegram renders the page chronologically: oldest at top, newest at
+    // bottom. So parsed[0] is the OLDEST message on this page.
+    for (const msg of parsed) {
+      if (seen.has(msg.telegramPostId)) continue;
+      seen.add(msg.telegramPostId);
+
+      // We've caught up to data we already have — stop.
+      if (
+        newestExisting &&
+        msg.telegramPostId === newestExisting.telegramPostId
+      ) {
+        stop = true;
+        break;
+      }
+      // Don't bother going further back than what the feed shows.
+      if (msg.postedAt < cutoff) {
+        stop = true;
+        break;
+      }
+      collected.push(msg);
+    }
+    if (stop) break;
+
+    // Use the OLDEST post on this page as the next `?before=` cursor.
+    // telegramPostId looks like "rybar/12345"; the API wants just "12345".
+    const oldestId = parsed[0]?.telegramPostId;
+    const nextCursor = oldestId?.split("/")[1];
+    if (!nextCursor || nextCursor === cursor) break; // didn't advance, bail
+    cursor = nextCursor;
+
+    // Be polite between page requests within a single channel.
+    if (page < MAX_PAGES_PER_CHANNEL - 1) {
+      await new Promise((r) => setTimeout(r, PAGE_DELAY_MS));
+    }
+  }
+
+  return { messages: collected, pagesFetched };
+}
+
 export async function scrapeChannel(
   prisma: PrismaClient,
   config: ChannelConfig
@@ -215,9 +303,18 @@ export async function scrapeChannel(
   const start = Date.now();
   try {
     const channelId = await upsertChannel(prisma, config);
-    const html = await fetchChannelHtml(config.handle);
-    const parsed = parseMessages(html);
+    const { messages: parsed, pagesFetched } = await fetchAllNewMessages(
+      prisma,
+      channelId,
+      config.handle
+    );
     const newMessages = await insertNewMessages(prisma, channelId, parsed);
+
+    if (pagesFetched > 1) {
+      console.log(
+        `[scrape] ${config.handle}: ${newMessages} new (${pagesFetched} pages)`
+      );
+    }
 
     await prisma.channel.update({
       where: { id: channelId },
