@@ -150,6 +150,7 @@ async function upsertChannel(
       sourceType: config.source_type,
       notes: config.notes,
       inOriginalList: config.in_original_list,
+      isActive: true,
     },
     update: {
       nameRu: config.name_ru,
@@ -161,9 +162,30 @@ async function upsertChannel(
       sourceType: config.source_type,
       notes: config.notes,
       inOriginalList: config.in_original_list,
+      isActive: true,
     },
   });
   return channel.id;
+}
+
+/**
+ * Soft-delete: marks any DB channel whose handle is NOT present in the YAML
+ * as isActive=false. Keeps historical messages but excludes them from the feed
+ * and from future scrapes.
+ */
+async function deactivateRemovedChannels(
+  prisma: PrismaClient,
+  configs: ChannelConfig[]
+): Promise<number> {
+  const yamlHandles = configs.map((c) => c.handle);
+  const result = await prisma.channel.updateMany({
+    where: {
+      handle: { notIn: yamlHandles },
+      isActive: true,
+    },
+    data: { isActive: false },
+  });
+  return result.count;
 }
 
 async function insertNewMessages(
@@ -255,6 +277,11 @@ export async function runScrape(options?: {
       triggeredBy,
     },
   });
+
+  const deactivated = await deactivateRemovedChannels(prisma, channels);
+  if (deactivated > 0) {
+    console.log(`[scrape] Deactivated ${deactivated} channel(s) no longer in YAML`);
+  }
 
   const perChannel: ChannelScrapeResult[] = [];
 

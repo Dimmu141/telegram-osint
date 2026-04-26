@@ -18,6 +18,7 @@ const MAX_MESSAGES_PER_RUN = 500;
 
 const TOPICS = [
   "military_operations",
+  "strikes_air_defense",
   "casualties_losses",
   "escalation_rhetoric",
   "nordic_relevance",
@@ -80,11 +81,12 @@ SIGNIFICANCE SCALE:
 - critical: nuclear threats, strategic strikes, major escalations, infrastructure attacks, direct Nordic/Finnish references, leadership change signals, war-ending or war-expanding events
 
 TOPIC GUIDANCE:
+- strikes_air_defense: missile/drone strikes (Shahed, Geran, Iskander, Kalibr, Kh-101, Kinzhal), air defense activations, downed UAVs, attacks on infrastructure (energy grid, ports, airfields). PREFER this over military_operations when the message is specifically about strike packages or air-defense engagement — these are the most Nordic-relevant since the same systems threaten Baltic airspace.
 - casualties_losses: confirmed or claimed deaths, equipment destroyed, POW exchanges
 - escalation_rhetoric: nuclear threats, threats against NATO/Nordic states, calls for expansion of war
 - nordic_relevance: any direct mention of Finland, Sweden, Norway, Denmark, Baltic states, Arctic, Nordic NATO posture
 - propaganda: pure ideological/agitprop content with no news substance
-- military_operations: factual front-line developments
+- military_operations: factual front-line developments NOT covered by strikes_air_defense (troop movements, ground assaults, tactical maneuvers)
 
 Be precise with military terminology. Do not soften propaganda language — translate it accurately so analysts can see how it is framed.
 

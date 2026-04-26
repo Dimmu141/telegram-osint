@@ -133,9 +133,9 @@
   category: kremlin_official
   language: ru
   stance: pro_kremlin
-  priority: tier_1
+  priority: tier_3
   source_type: government
-  notes: "Foreign Ministry official channel. Tracks diplomatic posture toward Finland, NATO, EU directly."
+  notes: "Foreign Ministry official channel. DEMOTED tier_3: posts 30+ items/day of routine diplomatic noise that drowns military content. Keep for Nordic/NATO-relevant items but expect low average significance."
   in_original_list: false
 
 - handle: MariaVladimirovnaZakharova
@@ -145,9 +145,9 @@
   category: kremlin_official
   language: ru
   stance: pro_kremlin
-  priority: tier_1
+  priority: tier_3
   source_type: government
-  notes: "MFA spokesperson. Sets tone of daily MFA commentary. Frequently provocative toward Nordic countries."
+  notes: "MFA spokesperson. DEMOTED tier_3: daily diplomatic commentary, occasionally provocative toward Nordic countries. Mostly noise; keep on but expect classifier to mark most posts low."
   in_original_list: false
 
 - handle: medvedev_telegram
@@ -309,6 +309,42 @@
   notes: "Alexander Kots, Komsomolskaya Pravda field correspondent."
   in_original_list: true
 
+- handle: vrogov
+  name_ru: "Владимир Рогов"
+  name_en: "Vladimir Rogov"
+  url: https://t.me/s/vrogov
+  category: milblogger_frontline
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: milblogger
+  notes: "Russian-installed Zaporizhzhia regional official. 104K subscribers. Daily drone-attack alerts, infrastructure strike reports, Zaporizhzhia front updates. Active military focus."
+  in_original_list: false
+
+- handle: anna_news
+  name_ru: "ANNA NEWS"
+  name_en: "ANNA NEWS"
+  url: https://t.me/s/anna_news
+  category: milblogger_frontline
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: milblogger
+  notes: "Long-running war-news outlet. 243K subscribers. Air defense activity, strike reports, operations coverage. Heavy military focus."
+  in_original_list: false
+
+- handle: voin_dv
+  name_ru: "Воин DV"
+  name_en: "Voin DV (Far East Grouping V)"
+  url: https://t.me/s/voin_dv
+  category: milblogger_frontline
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: milblogger
+  notes: "Far East army grouping 'V' channel. 150K subscribers. Operational updates, drone footage, casualty reports tied to a specific army group. Pure frontline content."
+  in_original_list: false
+
 - handle: voenkorKotenok
   name_ru: "Военкор Котёнок"
   name_en: "Voenkor Kotenok"
@@ -368,6 +404,42 @@
   priority: tier_1
   source_type: milblogger
   notes: "Heavyweight military analyst. Frequently cross-referenced by other milbloggers as authoritative. Strong geopolitical framing."
+  in_original_list: false
+
+- handle: swodki
+  name_ru: "Сводки ополчения Новороссии"
+  name_en: "Svodki Opolcheniya (Militia Reports)"
+  url: https://t.me/s/swodki
+  category: milblogger_analytical
+  language: ru
+  stance: pro_kremlin
+  priority: tier_1
+  source_type: milblogger
+  notes: "War-sitrep aggregator. 219K subscribers. Pulls strikes, casualties, frontline movement reports from many milbloggers. Very war-dense, high signal-to-noise."
+  in_original_list: false
+
+- handle: romanov_92
+  name_ru: "Romanov Лайт"
+  name_en: "Romanov Light (Roman Saponkov)"
+  url: https://t.me/s/romanov_92
+  category: milblogger_analytical
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: milblogger
+  notes: "Roman Saponkov, war commentator. 140K subscribers. Hawkish blog-format analysis, frontline commentary. 'Authoritative blog' framing."
+  in_original_list: false
+
+- handle: bmpd_cast
+  name_ru: "bmpd / ЦАСТ"
+  name_en: "bmpd / CAST (Centre for Analysis of Strategies and Technologies)"
+  url: https://t.me/s/bmpd_cast
+  category: milblogger_analytical
+  language: ru
+  stance: mixed
+  priority: tier_1
+  source_type: elite_analytical
+  notes: "Defense industry think-tank channel. 47K subscribers. UAV development, naval modernization, tank programs, procurement contracts, global arms market. The single most analytical Russian-language source on the defense industrial base."
   in_original_list: false
 
 - handle: dva_majors
@@ -459,6 +531,18 @@
 # Different from propagandist (personality) or milblogger (combat focus).
 # These are ideologically-driven, often more extreme than Kremlin line.
 # -----------------------------------------------------------
+
+- handle: zakharprilepin
+  name_ru: "Захар Прилепин"
+  name_en: "Zakhar Prilepin"
+  url: https://t.me/s/zakharprilepin
+  category: nationalist
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: propagandist
+  notes: "Writer, Lt. Colonel, public figure. 242K subscribers. Hard-nationalist ideologue with combat-veteran credentials. Shapes the literary-nationalist register. Often more extreme than Kremlin mainstream."
+  in_original_list: false
 
 - handle: tsargradtv
   name_ru: "Царьград"
@@ -828,21 +912,21 @@
 # SUMMARY — channel count by category
 # ============================================================
 #   State media:                5 channels  (rt_russian preview-disabled → 0 msgs)
-#   Kremlin official:           5 channels  (medvedev_telegram may need recheck)
+#   Kremlin official:           5 channels  (MID/Zakharova demoted to tier_3 — too noisy)
 #   Propagandist:               4 channels  ← Solovyov, Simonyan, Markov, A.Medvedev
-#   Milblogger frontline:       8 channels  ← incl. Podolyaka, Readovka
-#   Milblogger analytical:      6 channels  ← incl. Rozhin, Osvedomitel
-#   PMC:                        2 channels  ← grey_zone (preview-disabled), rsotmdnr
-#   Nationalist:                1 channel   ← Tsargrad
+#   Milblogger frontline:      11 channels  ← incl. Podolyaka, Readovka, Rogov, ANNA, Voin DV
+#   Milblogger analytical:      9 channels  ← incl. Rybar, Rozhin, Svodki, Romanov, bmpd/CAST
+#   PMC:                        2 channels
+#   Nationalist:                2 channels  ← Tsargrad, Prilepin
 #   Tabloid (tier_3):           3 channels
 #   Exile / independent:        9 channels  (the_ins_ru, novgaz_europe preview-disabled)
 #   Opposition:                 4 channels  (PopularPolitics preview-disabled)
 #   Elite analytical:           2 channels
 #   Business:                   3 channels
-#   Ukrainian:                  3 channels
-#   Belarusian:                 1 channel   (Hajun_BY stopped operating, removed)
+#   Ukrainian:                  3 channels  (kept for context, low priority)
+#   Belarusian:                 1 channel
 #   -----------------------------------------------
-#   TOTAL:                     56 channels
+#   TOTAL:                     63 channels
 #
 # Channels marked "preview-disabled" have correct handles but t.me/s/ returns
 # no tgme_widget_message HTML — our scraper cannot reach them.

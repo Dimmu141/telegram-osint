@@ -9,6 +9,7 @@ async function main() {
   const since = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
   const channels = await prisma.channel.findMany({
+    where: { isActive: true },
     select: {
       handle: true,
       nameEn: true,
@@ -33,7 +34,7 @@ async function main() {
     else ok.push(c);
   }
 
-  console.log(`\n=== ${channels.length} channels in DB ===\n`);
+  console.log(`\n=== ${channels.length} active channels in DB (inactive ones excluded) ===\n`);
   console.log(`OK (≥3 msgs in 48h): ${ok.length}`);
   console.log(`QUIET (1-2 msgs):    ${quiet.length}`);
   console.log(`DEAD (0 msgs):       ${dead.length}\n`);

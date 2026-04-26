@@ -10,6 +10,7 @@ export default async function Home() {
     where: {
       postedAt: { gte: since },
       llmProcessedAt: { not: null },
+      channel: { isActive: true },
     },
     orderBy: { postedAt: "desc" },
     select: {

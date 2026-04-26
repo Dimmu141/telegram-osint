@@ -21,7 +21,8 @@ export interface MessageRow {
 
 const TOPIC_FILTERS = [
   { label: "All", topics: null },
-  { label: "Military", topics: ["military_operations", "breaking_news"] },
+  { label: "Military", topics: ["military_operations", "strikes_air_defense", "breaking_news"] },
+  { label: "Strikes / Air Def", topics: ["strikes_air_defense"] },
   { label: "Casualties / Losses", topics: ["casualties_losses"] },
   { label: "Escalation", topics: ["escalation_rhetoric"] },
   { label: "Nordic", topics: ["nordic_relevance"] },
@@ -57,6 +58,7 @@ const SIGNIFICANCE_RANK: Record<string, number> = {
 
 const TOPIC_STYLES: Record<string, string> = {
   military_operations: "bg-red-100 text-red-700",
+  strikes_air_defense: "bg-red-200 text-red-900",
   casualties_losses: "bg-rose-200 text-rose-800",
   escalation_rhetoric: "bg-amber-100 text-amber-800",
   nordic_relevance: "bg-sky-100 text-sky-800",
@@ -205,7 +207,7 @@ function MessageCard({ msg }: { msg: MessageRow }) {
 export default function MessageFeed({ messages }: { messages: MessageRow[] }) {
   const [topicFilter, setTopicFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All sources");
-  const [sigFilter, setSigFilter] = useState("All");
+  const [sigFilter, setSigFilter] = useState("Medium+");
 
   const filtered = useMemo(() => {
     const tf = TOPIC_FILTERS.find((f) => f.label === topicFilter);
