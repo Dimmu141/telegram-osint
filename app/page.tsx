@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
-import MessageFeed, { type MessageRow } from "./components/MessageFeed";
+import MessageFeed, { type MessageRow, type HealthStats } from "./components/MessageFeed";
 
 export const revalidate = 300;
 
@@ -33,9 +33,7 @@ export default async function Home() {
         entities: true,
         summary: true,
         postedAt: true,
-        channel: {
-          select: { handle: true, nameEn: true, category: true },
-        },
+        channel: { select: { handle: true, nameEn: true, category: true } },
       },
     }),
     prisma.scrapeRun.findFirst({
@@ -57,30 +55,20 @@ export default async function Home() {
     }),
   ]);
 
+  // Compute rows
   const rows: MessageRow[] = messages.map((m) => ({
     ...m,
-    text: m.text,
     postedAt: m.postedAt.toISOString(),
   }));
 
-  // Compute top entities server-side from the fetched messages
+  // Top entities (server-side aggregation)
   const entityCounts = new Map<string, number>();
   for (const m of messages) {
-    const ents = m.entities as {
-      people?: string[];
-      locations?: string[];
-      organizations?: string[];
-    } | null;
+    const ents = m.entities as { people?: string[]; locations?: string[]; organizations?: string[] } | null;
     if (!ents) continue;
-    for (const list of [
-      ents.people ?? [],
-      ents.locations ?? [],
-      ents.organizations ?? [],
-    ]) {
+    for (const list of [ents.people ?? [], ents.locations ?? [], ents.organizations ?? []]) {
       for (const e of list) {
-        if (e.length > 1) {
-          entityCounts.set(e, (entityCounts.get(e) ?? 0) + 1);
-        }
+        if (e.length > 1) entityCounts.set(e, (entityCounts.get(e) ?? 0) + 1);
       }
     }
   }
@@ -89,7 +77,7 @@ export default async function Home() {
     .slice(0, 15)
     .map(([name, count]) => ({ name, count }));
 
-  // Compute hourly message counts (UTC hours 0–23)
+  // Hourly data (server-side)
   const hourlyMap = new Map<number, number>();
   for (let h = 0; h < 24; h++) hourlyMap.set(h, 0);
   for (const m of messages) {
@@ -100,11 +88,12 @@ export default async function Home() {
     .sort((a, b) => a[0] - b[0])
     .map(([hour, count]) => ({ hour, count }));
 
-  const healthStats = {
+  const healthStats: HealthStats = {
     lastScrapedAt: latestRun?.finishedAt?.toISOString() ?? null,
     lastClassifiedAt: latestClassify?.llmProcessedAt?.toISOString() ?? null,
     queueDepth,
     classifiedToday,
+    totalChannels: 63,
   };
 
   const briefing = todayBriefing
@@ -114,23 +103,65 @@ export default async function Home() {
       }
     : null;
 
+  const nowStr = new Date().toLocaleString("en-GB", {
+    day: "numeric", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", timeZone: "UTC",
+  }) + " UTC";
+
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8">
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-900">Telegram OSINT</h1>
-        <p className="text-sm text-zinc-500 mt-1">
-          Russian-language channels · last 24h · {messages.length} classified messages
-        </p>
+    <>
+      {/* ── Top bar (server-rendered, CSS animation via globals.css) ── */}
+      <header className="topbar">
+        <div className="topbar-inner">
+          <a href="/" className="brand">
+            <div className="brand-mark">tg</div>
+            <div>
+              <div className="brand-name">Telegram OSINT</div>
+              <div className="brand-sub">public · open source</div>
+            </div>
+          </a>
+          <div className="top-status">
+            <div className="stat"><span className="dot" /> <b>live</b></div>
+            <div className="stat">
+              scraped <b>{healthStats.lastScrapedAt ? formatRelativeServer(healthStats.lastScrapedAt) : "—"}</b>
+            </div>
+            <div className="stat">
+              classified <b>{healthStats.lastClassifiedAt ? formatRelativeServer(healthStats.lastClassifiedAt) : "—"}</b>
+            </div>
+            <div className="stat">queue <b>{queueDepth}</b></div>
+            <div className="stat"><b>{healthStats.totalChannels}</b> channels · <b>{classifiedToday}</b> today</div>
+          </div>
+          <div className="top-actions">
+            <a href="https://github.com/Dimmu141/telegram-osint" target="_blank" rel="noopener noreferrer" className="icon-btn" title="GitHub">↗</a>
+          </div>
+        </div>
       </header>
-      <Suspense fallback={<p className="text-zinc-400 text-sm">Loading…</p>}>
+
+      <Suspense fallback={
+        <div style={{ padding: "40px", fontFamily: "var(--mono)", fontSize: "12px", color: "var(--ink-4)" }}>
+          Loading feed…
+        </div>
+      }>
         <MessageFeed
           messages={rows}
           briefing={briefing}
           healthStats={healthStats}
           topEntities={topEntities}
           hourlyData={hourlyData}
+          nowStr={nowStr}
+          totalCount={classifiedToday}
         />
       </Suspense>
-    </main>
+    </>
   );
+}
+
+function formatRelativeServer(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 2) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
 }
