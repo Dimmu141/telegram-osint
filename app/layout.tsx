@@ -25,10 +25,41 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000");
+
 export const metadata: Metadata = {
   title: "Telegram OSINT — Russian-language channel monitor",
   description:
     "63 Russian, Ukrainian and Belarusian Telegram channels — translated and classified for Nordic journalists and security analysts.",
+  metadataBase: new URL(siteUrl),
+  openGraph: {
+    title: "Telegram OSINT — Russian-language channel monitor",
+    description:
+      "63 Russian, Ukrainian and Belarusian Telegram channels — scraped every 30 min, translated to English, classified by topic and significance. Built for Nordic journalists and security analysts.",
+    url: siteUrl,
+    siteName: "Telegram OSINT",
+    type: "website",
+    locale: "en_GB",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Telegram OSINT — Russian-language channel monitor",
+    description:
+      "63 Russian, Ukrainian and Belarusian Telegram channels — translated and classified for Nordic journalists and security analysts.",
+  },
+  alternates: {
+    types: {
+      "application/rss+xml": `${siteUrl}/feed.xml`,
+    },
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

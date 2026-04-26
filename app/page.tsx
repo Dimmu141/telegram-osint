@@ -132,6 +132,9 @@ export default async function Home() {
             <div className="stat"><b>{healthStats.totalChannels}</b> channels · <b>{classifiedToday}</b> today</div>
           </div>
           <div className="top-actions">
+            <a href="/channels" className="nav-link">Channels</a>
+            <a href="/about" className="nav-link">About</a>
+            <a href="/feed.xml" className="nav-link" title="RSS feed">RSS</a>
             <a href="https://github.com/Dimmu141/telegram-osint" target="_blank" rel="noopener noreferrer" className="icon-btn" title="GitHub">↗</a>
           </div>
         </div>
