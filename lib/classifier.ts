@@ -1,7 +1,13 @@
 /**
  * Classification Pipeline
- * Primary: Groq (llama-3.3-70b-versatile) — ~14,400 RPD free tier
- * Fallback: Gemini 2.5 Flash-Lite — used if Groq fails
+ * Primary: Gemini 2.5 Flash-Lite — 1500 RPD free tier, no daily token cap
+ * Fallback: Groq cascade (llama-3.3-70b → llama-3.1-8b → gemma2-9b)
+ *
+ * Why Gemini-first: Groq's 70B model has a ~500K tokens/day cap that we
+ * exhaust mid-afternoon, after which the classifier falls through to the
+ * much weaker llama-3.1-8b for the rest of the day. Gemini's daily request
+ * cap (1500 RPD) is ~9× our throughput, so we get consistent quality across
+ * the whole day. Groq remains as the safety net for transient Gemini outages.
  */
 
 import { PrismaClient } from "@prisma/client";
@@ -221,7 +227,10 @@ async function callGemini(
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Gemini API error ${res.status}: ${text.slice(0, 300)}`);
+    // Log the full error body for 429s — Gemini puts the specific quota
+    // dimension in there and we want it visible in cron logs.
+    const slice = res.status === 429 ? 1500 : 400;
+    throw new Error(`Gemini API error ${res.status}: ${text.slice(0, slice)}`);
   }
 
   const data = await res.json();
@@ -238,13 +247,18 @@ async function callGemini(
 async function callLLM(
   messages: MessageInput[]
 ): Promise<{ results: ClassifiedMessage[]; model: string }> {
+  // Try Gemini first — high free-tier RPD with no daily token bucket means
+  // consistent quality all day. Groq cascade only fires if Gemini errors out.
   try {
-    return await callGroq(messages);
-  } catch (groqErr) {
-    const groqMsg = groqErr instanceof Error ? groqErr.message : String(groqErr);
-    console.warn(`[classify] All Groq models failed, trying Gemini fallback: ${groqMsg}`);
     const results = await callGemini(messages);
     return { results, model: GEMINI_MODEL };
+  } catch (geminiErr) {
+    const geminiMsg =
+      geminiErr instanceof Error ? geminiErr.message : String(geminiErr);
+    console.warn(
+      `[classify] Gemini failed, falling through to Groq cascade: ${geminiMsg}`
+    );
+    return await callGroq(messages);
   }
 }
 
