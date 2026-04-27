@@ -55,13 +55,11 @@ export default async function Home() {
     }),
   ]);
 
-  // Compute rows
   const rows: MessageRow[] = messages.map((m) => ({
     ...m,
     postedAt: m.postedAt.toISOString(),
   }));
 
-  // Top entities (server-side aggregation)
   const entityCounts = new Map<string, number>();
   for (const m of messages) {
     const ents = m.entities as { people?: string[]; locations?: string[]; organizations?: string[] } | null;
@@ -77,7 +75,6 @@ export default async function Home() {
     .slice(0, 15)
     .map(([name, count]) => ({ name, count }));
 
-  // Hourly data (server-side)
   const hourlyMap = new Map<number, number>();
   for (let h = 0; h < 24; h++) hourlyMap.set(h, 0);
   for (const m of messages) {
@@ -110,7 +107,6 @@ export default async function Home() {
 
   return (
     <>
-      {/* ── Top bar (server-rendered, CSS animation via globals.css) ── */}
       <header className="topbar">
         <div className="topbar-inner">
           <a href="/" className="brand">
@@ -133,6 +129,7 @@ export default async function Home() {
           </div>
           <div className="top-actions">
             <a href="/channels" className="nav-link">Channels</a>
+            <a href="/status" className="nav-link">Status</a>
             <a href="/about" className="nav-link">About</a>
             <a href="/feed.xml" className="nav-link" title="RSS feed">RSS</a>
             <a href="https://github.com/Dimmu141/telegram-osint" target="_blank" rel="noopener noreferrer" className="icon-btn" title="GitHub">↗</a>
@@ -142,7 +139,7 @@ export default async function Home() {
 
       <Suspense fallback={
         <div style={{ padding: "40px", fontFamily: "var(--mono)", fontSize: "12px", color: "var(--ink-4)" }}>
-          Loading feed…
+          Loading feed...
         </div>
       }>
         <MessageFeed

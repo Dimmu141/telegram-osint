@@ -1,6 +1,6 @@
 # Telegram OSINT
 
-Telegram OSINT is a public-source monitoring dashboard for Russian, Ukrainian, and Belarusian Telegram channels. It scrapes public Telegram web previews, stores new posts in Postgres, translates and classifies them with LLMs, and serves a filtered analyst feed with RSS and health checks.
+Telegram OSINT is a public-source monitoring dashboard for Russian, Ukrainian, and Belarusian Telegram channels. It scrapes public Telegram web previews, stores new posts in Postgres, translates and classifies them with LLMs, and serves a filtered analyst feed with RSS, channel transparency, and live pipeline status.
 
 The project is built for Nordic journalists, security analysts, and researchers who need a fast way to scan Russian-language Telegram without treating the feed as verified ground truth.
 
@@ -11,7 +11,15 @@ The project is built for Nordic journalists, security analysts, and researchers 
 - Stores channels, messages, scrape runs, and daily briefings in Postgres via Prisma.
 - Translates posts to English and classifies topic, significance, entities, and summary.
 - Generates a daily briefing from high-significance posts.
-- Exposes a web dashboard, message permalinks, a channel transparency page, RSS, and `/api/health`.
+- Exposes a web dashboard, message permalinks, a channel transparency page, RSS, `/api/health`, and a human-readable `/status` page.
+
+## Product Surfaces
+
+- `/` - analyst feed for the last 24 hours, with briefing, filters, entities, and pipeline summary.
+- `/channels` - channel transparency page with source category, stance, priority, notes, and scrape state.
+- `/status` - operational trust view showing freshness, queue depth, model mix, scrape failures, and recent runs.
+- `/feed.xml` - RSS feed for high and critical significance items.
+- `/api/health` - machine-readable health endpoint for monitors.
 
 ## Stack
 
@@ -26,7 +34,7 @@ The project is built for Nordic journalists, security analysts, and researchers 
 
 ## Repository Map
 
-- `app/` - Next.js pages, routes, feed UI, health endpoint, and RSS route.
+- `app/` - Next.js pages, routes, feed UI, status page, health endpoint, and RSS route.
 - `lib/telegram-scraper.ts` - public Telegram HTML scraper and parser.
 - `lib/classifier.ts` - LLM classification pipeline.
 - `scripts/` - CLI entrypoints used locally and by GitHub Actions.
@@ -103,6 +111,12 @@ Check pipeline health:
 curl http://localhost:3000/api/health
 ```
 
+Open the human-readable operations view:
+
+```bash
+open http://localhost:3000/status
+```
+
 ## Scheduled Jobs
 
 GitHub Actions currently runs:
@@ -143,12 +157,15 @@ The output is not verification. Telegram posts can be propaganda, rumor, satire,
 
 ## Health Signals
 
-The app exposes `/api/health`, which reports:
+The app exposes both `/status` and `/api/health`, reporting:
 
 - last scrape time
 - last classification time
 - unprocessed queue depth
 - messages classified in the last 24 hours
+- model mix across recent classifications
 - last scrape success/failure counts
+- channels with recent scrape errors
+- recent scrape runs
 
-A healthy deployment should have recent scrape and classification timestamps and a queue depth below the configured warning threshold.
+A healthy deployment should have recent scrape and classification timestamps, few repeated channel errors, and a queue depth below the configured warning threshold.
