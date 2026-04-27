@@ -28,7 +28,7 @@ jobs:
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
       - name: Run scraper
-        run: npx tsx scripts/scrape.ts
+        run: npx tsx scripts/scrape.ts --triggered-by=github_actions
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
