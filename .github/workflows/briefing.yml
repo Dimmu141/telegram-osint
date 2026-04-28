@@ -29,6 +29,12 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
       - name: Generate daily briefing
         run: npx tsx scripts/briefing.ts
         env:
