@@ -1,12 +1,12 @@
 /**
  * Classification Pipeline
- * Primary: Gemini 2.5 Flash-Lite — 1500 RPD free tier, no daily token cap
- * Fallback: Groq cascade (llama-3.3-70b → llama-3.1-8b → gemma2-9b)
+ * Primary: Gemini 2.5 Flash-Lite - 1500 RPD free tier, no daily token cap
+ * Fallback: Groq cascade (llama-3.3-70b -> llama-3.1-8b -> gemma2-9b)
  *
  * Why Gemini-first: Groq's 70B model has a ~500K tokens/day cap that we
  * exhaust mid-afternoon, after which the classifier falls through to the
  * much weaker llama-3.1-8b for the rest of the day. Gemini's daily request
- * cap (1500 RPD) is ~9× our throughput, so we get consistent quality across
+ * cap (1500 RPD) is ~9x our throughput, so we get consistent quality across
  * the whole day. Groq remains as the safety net for transient Gemini outages.
  */
 
@@ -19,7 +19,7 @@ const GROQ_MODELS = [
 ];
 const GEMINI_MODEL = "gemini-2.5-flash-lite";
 const BATCH_SIZE = 8;
-const RATE_LIMIT_DELAY_MS = 35_000; // ~5,800 tokens/batch, 12K TPM limit → need ~29s refill
+const RATE_LIMIT_DELAY_MS = 35_000; // ~5,800 tokens/batch, 12K TPM limit -> need ~29s refill
 const MAX_MESSAGES_PER_RUN = 500;
 
 const TOPICS = [
@@ -76,9 +76,9 @@ const SYSTEM_PROMPT = `You are an OSINT analyst providing intelligence support t
 For each message you receive, provide:
 1. An accurate English translation preserving tone, military terminology, and propaganda framing
 2. Topic classification from the provided list
-3. A significance rating (low | medium | high | critical) — see scale below
+3. A significance rating (low | medium | high | critical) - see scale below
 4. Named entity extraction
-5. A 2-3 sentence analytical summary in English that notes: what is claimed, how it is framed, and what a Nordic analyst should note. AVOID formulaic openers like "Nordic analysts should note..." — write each summary naturally.
+5. A 2-3 sentence analytical summary in English that notes: what is claimed, how it is framed, and what a Nordic analyst should note. AVOID formulaic openers like "Nordic analysts should note..." - write each summary naturally.
 
 SIGNIFICANCE SCALE:
 - low: routine state-media noise, ceremonial content, propaganda boilerplate, daily ribbon-cutting
@@ -87,14 +87,14 @@ SIGNIFICANCE SCALE:
 - critical: nuclear threats, strategic strikes, major escalations, infrastructure attacks, direct Nordic/Finnish references, leadership change signals, war-ending or war-expanding events
 
 TOPIC GUIDANCE:
-- strikes_air_defense: missile/drone strikes (Shahed, Geran, Iskander, Kalibr, Kh-101, Kinzhal), air defense activations, downed UAVs, attacks on infrastructure (energy grid, ports, airfields). PREFER this over military_operations when the message is specifically about strike packages or air-defense engagement — these are the most Nordic-relevant since the same systems threaten Baltic airspace.
+- strikes_air_defense: missile/drone strikes (Shahed, Geran, Iskander, Kalibr, Kh-101, Kinzhal), air defense activations, downed UAVs, attacks on infrastructure (energy grid, ports, airfields). PREFER this over military_operations when the message is specifically about strike packages or air-defense engagement - these are the most Nordic-relevant since the same systems threaten Baltic airspace.
 - casualties_losses: confirmed or claimed deaths, equipment destroyed, POW exchanges
 - escalation_rhetoric: nuclear threats, threats against NATO/Nordic states, calls for expansion of war
 - nordic_relevance: any direct mention of Finland, Sweden, Norway, Denmark, Baltic states, Arctic, Nordic NATO posture
 - propaganda: pure ideological/agitprop content with no news substance
 - military_operations: factual front-line developments NOT covered by strikes_air_defense (troop movements, ground assaults, tactical maneuvers)
 
-Be precise with military terminology. Do not soften propaganda language — translate it accurately so analysts can see how it is framed.
+Be precise with military terminology. Do not soften propaganda language - translate it accurately so analysts can see how it is framed.
 
 Respond ONLY with valid JSON. No markdown, no preamble, no explanation outside the JSON.`;
 
@@ -132,8 +132,37 @@ function parseGroqRetryMs(errorBody: string): number {
   return secMatch ? Math.ceil(parseFloat(secMatch[1])) * 1000 + 2_000 : 35_000;
 }
 
+function parseGeminiRetryMs(errorBody: string): number {
+  try {
+    const parsed = JSON.parse(errorBody);
+    const retryDelay = parsed?.error?.details?.find(
+      (detail: { "@type"?: string }) =>
+        detail["@type"] === "type.googleapis.com/google.rpc.RetryInfo"
+    )?.retryDelay;
+    if (typeof retryDelay === "string") {
+      const seconds = Number(retryDelay.replace(/s$/, ""));
+      if (Number.isFinite(seconds)) return Math.ceil(seconds) * 1000 + 2_000;
+    }
+  } catch {
+    // Fall through to regex parsing below.
+  }
+
+  const retryMatch = errorBody.match(/retry in (\d+(?:\.\d+)?)s/i);
+  if (retryMatch) return Math.ceil(Number(retryMatch[1])) * 1000 + 2_000;
+  return 35_000;
+}
+
 function isTPDError(errorBody: string): boolean {
   return errorBody.includes("tokens per day") || errorBody.includes("TPD");
+}
+
+function isRequestTooLarge(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return (
+    message.includes("Groq API error 413") ||
+    message.includes("Request too large") ||
+    (message.includes("Requested") && message.includes("TPM"))
+  );
 }
 
 async function callGroqModel(
@@ -166,7 +195,7 @@ async function callGroqModel(
     const text = await res.text();
     if (res.status === 429) {
       if (isTPDError(text)) {
-        // Daily quota exhausted for this model — caller should try next model
+        // Daily quota exhausted for this model - caller should try next model
         throw Object.assign(new Error(`Groq TPD exceeded for ${model}`), { isTPD: true });
       }
       if (attempt < 2) {
@@ -207,7 +236,8 @@ async function callGroq(messages: MessageInput[]): Promise<{ results: Classified
 }
 
 async function callGemini(
-  messages: MessageInput[]
+  messages: MessageInput[],
+  attempt = 0
 ): Promise<ClassifiedMessage[]> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not set in environment");
@@ -227,8 +257,14 @@ async function callGemini(
 
   if (!res.ok) {
     const text = await res.text();
-    // Log the full error body for 429s — Gemini puts the specific quota
+    // Log the full error body for 429s - Gemini puts the specific quota
     // dimension in there and we want it visible in cron logs.
+    if (res.status === 429 && attempt < 1) {
+      const waitMs = parseGeminiRetryMs(text);
+      console.log(`[classify] Gemini rate limited, waiting ${(waitMs / 1000).toFixed(1)}s...`);
+      await new Promise((r) => setTimeout(r, waitMs));
+      return callGemini(messages, attempt + 1);
+    }
     const slice = res.status === 429 ? 1500 : 400;
     throw new Error(`Gemini API error ${res.status}: ${text.slice(0, slice)}`);
   }
@@ -247,7 +283,7 @@ async function callGemini(
 async function callLLM(
   messages: MessageInput[]
 ): Promise<{ results: ClassifiedMessage[]; model: string }> {
-  // Try Gemini first — high free-tier RPD with no daily token bucket means
+  // Try Gemini first - high free-tier RPD with no daily token bucket means
   // consistent quality all day. Groq cascade only fires if Gemini errors out.
   try {
     const results = await callGemini(messages);
@@ -267,9 +303,12 @@ async function writeResults(
   results: ClassifiedMessage[],
   validIds: Set<string>,
   modelName: string
-): Promise<void> {
+): Promise<number> {
   const validResults = results.filter((r) => validIds.has(r.id));
+  let updated = 0;
+  const writtenIds = new Set<string>();
   for (const r of validResults) {
+    if (writtenIds.has(r.id)) continue;
     try {
       await prisma.message.update({
         where: { id: r.id },
@@ -283,9 +322,49 @@ async function writeResults(
           llmModel: modelName,
         },
       });
+      writtenIds.add(r.id);
+      updated++;
     } catch {
       // skip individual failures silently
     }
+  }
+  return updated;
+}
+
+async function classifyInputs(
+  prisma: PrismaClient,
+  inputs: MessageInput[],
+  batchLabel: string
+): Promise<{ processed: number; failed: number }> {
+  try {
+    const { results, model } = await callLLM(inputs);
+    const validIds = new Set(inputs.map((m) => m.id));
+    const updated = await writeResults(prisma, results, validIds, model);
+    const failed = inputs.length - updated;
+    if (failed > 0) {
+      console.warn(
+        `[classify] ${batchLabel}: ${failed} message(s) had no persisted result from ${model}`
+      );
+    }
+    console.log(`[classify] ${batchLabel} done (${updated}/${inputs.length} classified via ${model})`);
+    return { processed: updated, failed };
+  } catch (err) {
+    if (isRequestTooLarge(err) && inputs.length > 1) {
+      const midpoint = Math.ceil(inputs.length / 2);
+      console.warn(
+        `[classify] ${batchLabel} request too large, splitting ${inputs.length} messages into ${midpoint} + ${inputs.length - midpoint}`
+      );
+      const left = await classifyInputs(prisma, inputs.slice(0, midpoint), `${batchLabel}a`);
+      const right = await classifyInputs(prisma, inputs.slice(midpoint), `${batchLabel}b`);
+      return {
+        processed: left.processed + right.processed,
+        failed: left.failed + right.failed,
+      };
+    }
+
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[classify] ${batchLabel} failed: ${message}`);
+    return { processed: 0, failed: inputs.length };
   }
 }
 
@@ -341,17 +420,9 @@ export async function runClassification(options?: {
       channelStance: m.channel.stance,
     }));
 
-    try {
-      const { results, model } = await callLLM(inputs);
-      const validIds = new Set(inputs.map((m) => m.id));
-      await writeResults(prisma, results, validIds, model);
-      processed += results.length;
-      console.log(`[classify] ✓ Batch ${batchNum} done (${results.length} classified via ${model})`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[classify] ✗ Batch ${batchNum} failed: ${message}`);
-      failed += batch.length;
-    }
+    const result = await classifyInputs(prisma, inputs, `Batch ${batchNum}`);
+    processed += result.processed;
+    failed += result.failed;
 
     if (i + BATCH_SIZE < messages.length) {
       await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY_MS));

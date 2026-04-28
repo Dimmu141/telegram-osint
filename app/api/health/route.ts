@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const [latestRun, queueDepth, latestClassify, totalToday] =
+    const [latestRun, queueDepth, latestClassify, totalToday, warningChannels] =
       await Promise.all([
         prisma.scrapeRun.findFirst({
           orderBy: { startedAt: "desc" },
@@ -29,6 +29,9 @@ export async function GET() {
             llmProcessedAt: { not: null },
           },
         }),
+        prisma.channel.count({
+          where: { isActive: true, lastScrapeWarning: { not: null } },
+        }),
       ]);
 
     const lastScrape = latestRun?.finishedAt;
@@ -45,15 +48,18 @@ export async function GET() {
     const classifyOk =
       minutesSinceClassify !== null && minutesSinceClassify < 120;
     const queueOk = queueDepth < 200;
+    const channelsOk = warningChannels === 0;
 
     const status =
-      scrapeOk && classifyOk && queueOk
+      scrapeOk && classifyOk && queueOk && channelsOk
         ? "ok"
         : !scrapeOk
           ? "stale_scrape"
           : !classifyOk
             ? "stale_classify"
-            : "queue_buildup";
+            : !queueOk
+              ? "queue_buildup"
+              : "channel_warnings";
 
     return NextResponse.json(
       {
@@ -69,6 +75,7 @@ export async function GET() {
           scrapeSucceeded: latestRun?.channelsSucceeded ?? null,
           scrapeFailed: latestRun?.channelsFailed ?? null,
           newMessages: latestRun?.newMessages ?? null,
+          warningChannels,
         },
       },
       { status: status === "ok" ? 200 : 503 }

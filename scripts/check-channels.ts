@@ -15,6 +15,9 @@ async function main() {
       nameEn: true,
       category: true,
       lastScrapedAt: true,
+      lastParsedCount: true,
+      lastNewMessages: true,
+      lastScrapeWarning: true,
       consecutiveErrors: true,
       lastError: true,
       isActive: true,
@@ -24,10 +27,14 @@ async function main() {
   });
 
   const dead: typeof channels = [];
+  const emptyPreview: typeof channels = [];
   const quiet: typeof channels = [];
   const ok: typeof channels = [];
 
   for (const c of channels) {
+    if (c.lastScrapeWarning || (c.lastScrapedAt && c.lastParsedCount === 0)) {
+      emptyPreview.push(c);
+    }
     const n = c._count.messages;
     if (n === 0) dead.push(c);
     else if (n < 3) quiet.push(c);
@@ -35,9 +42,19 @@ async function main() {
   }
 
   console.log(`\n=== ${channels.length} active channels in DB (inactive ones excluded) ===\n`);
-  console.log(`OK (≥3 msgs in 48h): ${ok.length}`);
+  console.log(`OK (>=3 msgs in 48h): ${ok.length}`);
   console.log(`QUIET (1-2 msgs):    ${quiet.length}`);
   console.log(`DEAD (0 msgs):       ${dead.length}\n`);
+  console.log(`NO PUBLIC POSTS:     ${emptyPreview.length}\n`);
+
+  if (emptyPreview.length) {
+    console.log("--- CHANNELS WITHOUT PUBLIC POSTS (HTTP ok, zero parsed posts last scrape) ---");
+    for (const c of emptyPreview) {
+      const last = c.lastScrapedAt ? c.lastScrapedAt.toISOString() : "never";
+      const warn = c.lastScrapeWarning ? ` | warn: ${c.lastScrapeWarning.slice(0, 80)}` : "";
+      console.log(`  ${c.handle.padEnd(28)} parsed=${String(c.lastParsedCount).padStart(2)} new=${String(c.lastNewMessages).padStart(2)} lastScraped=${last}${warn}`);
+    }
+  }
 
   if (dead.length) {
     console.log("--- DEAD CHANNELS (zero messages in last 48h) ---");

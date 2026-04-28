@@ -32,6 +32,7 @@ export interface ChannelScrapeResult {
   newMessages: number;
   totalParsed: number;
   durationMs: number;
+  warning?: string;
   error?: string;
 }
 
@@ -214,12 +215,12 @@ async function insertNewMessages(
 }
 
 // Pagination tuning. t.me/s/ returns ~20 messages per page; fetching up to 5
-// pages catches up to ~100 messages per channel per scrape — enough for even
+// pages catches up to ~100 messages per channel per scrape - enough for even
 // the most active milbloggers (Rybar, Readovka, Podolyaka) during a 30-min
 // scrape interval.
 const MAX_PAGES_PER_CHANNEL = 5;
 const PAGE_DELAY_MS = 400;
-// Don't paginate further back than ~26 hours — the feed only shows 24h.
+// Don't paginate further back than ~26 hours - the feed only shows 24h.
 const PAGINATION_CUTOFF_MS = 26 * 60 * 60 * 1000;
 
 /**
@@ -263,7 +264,7 @@ async function fetchAllNewMessages(
       if (seen.has(msg.telegramPostId)) continue;
       seen.add(msg.telegramPostId);
 
-      // We've caught up to data we already have — stop.
+      // We've caught up to data we already have - stop.
       if (
         newestExisting &&
         msg.telegramPostId === newestExisting.telegramPostId
@@ -309,17 +310,29 @@ export async function scrapeChannel(
       config.handle
     );
     const newMessages = await insertNewMessages(prisma, channelId, parsed);
+    const warning =
+      parsed.length === 0
+        ? "HTTP fetch succeeded, but Telegram returned no parseable public posts. The channel may hide previews, require opening Telegram, or have changed markup."
+        : null;
 
     if (pagesFetched > 1) {
       console.log(
         `[scrape] ${config.handle}: ${newMessages} new (${pagesFetched} pages)`
       );
     }
+    if (warning) {
+      console.warn(`[scrape] ${config.handle}: ${warning}`);
+    }
 
     await prisma.channel.update({
       where: { id: channelId },
       data: {
         lastScrapedAt: new Date(),
+        lastParsedCount: parsed.length,
+        lastNewMessages: newMessages,
+        lastNewMessageAt: newMessages > 0 ? new Date() : undefined,
+        lastEmptyScrapeAt: warning ? new Date() : undefined,
+        lastScrapeWarning: warning,
         consecutiveErrors: 0,
         lastError: null,
       },
@@ -330,6 +343,7 @@ export async function scrapeChannel(
       newMessages,
       totalParsed: parsed.length,
       durationMs: Date.now() - start,
+      warning: warning ?? undefined,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -397,8 +411,8 @@ export async function runScrape(options?: {
   const failed = perChannel.filter((r) => r.error).length;
   const newMessages = perChannel.reduce((sum, r) => sum + r.newMessages, 0);
   const errorSummary = perChannel
-    .filter((r) => r.error)
-    .map((r) => `${r.handle}: ${r.error}`)
+    .filter((r) => r.error || r.warning)
+    .map((r) => `${r.handle}: ${r.error ?? r.warning}`)
     .join("\n");
 
   const finishedAt = new Date();

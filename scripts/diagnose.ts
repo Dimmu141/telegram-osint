@@ -31,7 +31,7 @@ async function main() {
     },
   });
 
-  console.log("─── RECENT SCRAPE RUNS ─────────────────────────────");
+  console.log("--- RECENT SCRAPE RUNS -----------------------------");
   for (const r of runs) {
     const dur = r.finishedAt
       ? Math.round((r.finishedAt.getTime() - r.startedAt.getTime()) / 1000)
@@ -44,7 +44,7 @@ async function main() {
     );
     if (r.errorSummary) {
       const firstLine = r.errorSummary.split("\n")[0]?.slice(0, 100);
-      console.log(`   ⚠ ${firstLine}...`);
+      console.log(`   warning: ${firstLine}...`);
     }
   }
 
@@ -58,7 +58,7 @@ async function main() {
       channel: { select: { handle: true } },
     },
   });
-  console.log("\n─── MOST RECENT MESSAGE OVERALL ────────────────────");
+  console.log("\n--- MOST RECENT MESSAGE OVERALL --------------------");
   if (newestMsg) {
     console.log(
       `posted:    ${newestMsg.postedAt.toISOString()} (${relTime(newestMsg.postedAt)})`
@@ -83,7 +83,7 @@ async function main() {
       channel: { select: { handle: true } },
     },
   });
-  console.log("\n─── MOST RECENT CLASSIFIED MESSAGE ─────────────────");
+  console.log("\n--- MOST RECENT CLASSIFIED MESSAGE -----------------");
   if (newestClassified) {
     console.log(
       `classified: ${newestClassified.llmProcessedAt!.toISOString()} (${relTime(newestClassified.llmProcessedAt!)})`
@@ -98,7 +98,7 @@ async function main() {
   const queueDepth = await prisma.message.count({
     where: { llmProcessedAt: null },
   });
-  console.log(`\n─── CLASSIFICATION QUEUE ───────────────────────────`);
+  console.log(`\n--- CLASSIFICATION QUEUE ---------------------------`);
   console.log(`Unprocessed messages: ${queueDepth}`);
 
   // 5. Hourly post counts (last 24h, by postedAt)
@@ -116,7 +116,6 @@ async function main() {
     hourlyScraped.set(h, 0);
     hourlyClassified.set(h, 0);
   }
-  const nowH = new Date().getUTCHours();
   for (const m of recent) {
     const phoursAgo = Math.floor((Date.now() - m.postedAt.getTime()) / 3_600_000);
     const shoursAgo = Math.floor((Date.now() - m.scrapedAt.getTime()) / 3_600_000);
@@ -128,14 +127,14 @@ async function main() {
     }
   }
 
-  console.log("\n─── HOURLY MESSAGE FLOW (last 24h) ──────────────────");
+  console.log("\n--- HOURLY MESSAGE FLOW (last 24h) -----------------");
   console.log(`hours ago  posted  scraped  classified`);
   for (let h = 0; h < 24; h++) {
     const p = hourlyPosted.get(h) ?? 0;
     const s = hourlyScraped.get(h) ?? 0;
     const c = hourlyClassified.get(h) ?? 0;
     if (p === 0 && s === 0 && c === 0) continue;
-    const bar = "█".repeat(Math.min(40, Math.round(p / 3)));
+    const bar = "#".repeat(Math.min(40, Math.round(p / 3)));
     console.log(
       `${String(h).padStart(2)}h        ${String(p).padStart(4)}    ${String(s).padStart(4)}     ${String(c).padStart(5)}   ${bar}`
     );
@@ -148,6 +147,9 @@ async function main() {
     select: {
       handle: true,
       lastScrapedAt: true,
+      lastParsedCount: true,
+      lastNewMessages: true,
+      lastScrapeWarning: true,
       consecutiveErrors: true,
       lastError: true,
     },
@@ -159,7 +161,7 @@ async function main() {
       Date.now() - c.lastScrapedAt.getTime() > 60 * 60 * 1000
   );
   console.log(
-    `\n─── CHANNELS NOT SCRAPED IN >60 MIN: ${stale.length} of ${channels.length} ──`
+    `\n--- CHANNELS NOT SCRAPED IN >60 MIN: ${stale.length} of ${channels.length} ---`
   );
   for (const c of stale.slice(0, 20)) {
     console.log(
@@ -171,12 +173,24 @@ async function main() {
 
   // 7. Channels with errors
   const errored = channels.filter((c) => c.consecutiveErrors > 0);
-  console.log(`\n─── CHANNELS WITH ERRORS: ${errored.length} ──`);
+  console.log(`\n--- CHANNELS WITH ERRORS: ${errored.length} ---`);
   for (const c of errored.slice(0, 20)) {
     console.log(
       `  @${c.handle.padEnd(28)} errors=${c.consecutiveErrors}  ` +
         `last_scraped=${c.lastScrapedAt ? relTime(c.lastScrapedAt) : "NEVER"}` +
         (c.lastError ? `\n     [${c.lastError.slice(0, 120)}]` : "")
+    );
+  }
+
+  const emptyPreview = channels.filter(
+    (c) => c.lastScrapeWarning || (c.lastScrapedAt && c.lastParsedCount === 0)
+  );
+  console.log(`\n--- CHANNELS WITHOUT PUBLIC POSTS: ${emptyPreview.length} ---`);
+  for (const c of emptyPreview.slice(0, 30)) {
+    console.log(
+      `  @${c.handle.padEnd(28)} parsed=${String(c.lastParsedCount).padStart(2)} ` +
+        `new=${String(c.lastNewMessages).padStart(2)} last_scraped=${c.lastScrapedAt ? relTime(c.lastScrapedAt) : "NEVER"}` +
+        (c.lastScrapeWarning ? `\n     [${c.lastScrapeWarning.slice(0, 120)}]` : "")
     );
   }
 

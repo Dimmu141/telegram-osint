@@ -5,7 +5,7 @@ import Link from "next/link";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Channel list — Telegram OSINT",
+  title: "Channel list - Telegram OSINT",
   description:
     "All 63 Russian, Ukrainian and Belarusian Telegram channels monitored by Telegram OSINT, with category, stance, and editorial notes.",
 };
@@ -30,7 +30,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORY_DESC: Record<string, string> = {
   kremlin_official: "Ministries, spokespeople, and Kremlin-aligned officials. Authoritative for official position.",
-  state_media: "Institutional Kremlin media — TASS, RIA Novosti, RT. The formal state voice.",
+  state_media: "Institutional Kremlin media - TASS, RIA Novosti, RT. The formal state voice.",
   propagandist: "Personality-driven propaganda channels. Often set the rhetorical agenda before it reaches official media.",
   milblogger_frontline: "Embedded or frontline reporters. Raw, often contradicts MoD briefings.",
   milblogger_analytical: "Commentary, maps, and tactical analysis from a distance. Usually more reliable for operational picture.",
@@ -40,10 +40,10 @@ const CATEGORY_DESC: Record<string, string> = {
   tabloid: "Breaking news and tabloid outlets. Mostly domestic, occasionally first on incidents.",
   exile_independent: "Russia's independent exile press. Investigative and opposition-leaning.",
   opposition: "Opposition politicians, activists, and anti-war voices.",
-  elite_analytical: "Anonymous 'insider' channels. Treat with caution — potentially IO instruments.",
+  elite_analytical: "Anonymous 'insider' channels. Treat with caution - potentially IO instruments.",
   business: "Russian economic and business coverage.",
   ukrainian: "Ukrainian sources included for reaction and context.",
-  belarusian: "Belarusian opposition and security coverage — direct Nordic interest.",
+  belarusian: "Belarusian opposition and security coverage - direct Nordic interest.",
 };
 
 const CATEGORY_ORDER = [
@@ -117,6 +117,9 @@ export default async function ChannelsPage() {
       notes: true,
       language: true,
       lastScrapedAt: true,
+      lastParsedCount: true,
+      lastNewMessages: true,
+      lastScrapeWarning: true,
       consecutiveErrors: true,
     },
   });
@@ -149,13 +152,13 @@ export default async function ChannelsPage() {
       {/* Topbar */}
       <header className="topbar">
         <div className="topbar-inner">
-          <a href="/" className="brand">
+          <Link href="/" className="brand">
             <div className="brand-mark">tg</div>
             <div>
               <div className="brand-name">Telegram OSINT</div>
-              <div className="brand-sub">public · open source</div>
+              <div className="brand-sub">public - open source</div>
             </div>
-          </a>
+          </Link>
           <nav
             style={{
               display: "flex",
@@ -207,7 +210,7 @@ export default async function ChannelsPage() {
               className="icon-btn"
               title="GitHub"
             >
-              ↗
+              GH
             </a>
           </div>
         </div>
@@ -222,7 +225,7 @@ export default async function ChannelsPage() {
             <h1 className="about-page-title">Channel list</h1>
             <p className="about-page-lead">
               {total} active channels across {sortedGroups.length} categories.
-              Tier 1: {tier1} · Tier 2: {tier2} · Tier 3: {tier3}.
+              Tier 1: {tier1} - Tier 2: {tier2} - Tier 3: {tier3}.
               Channels are scraped every 30 minutes from their public Telegram
               web preview.
             </p>
@@ -250,6 +253,7 @@ export default async function ChannelsPage() {
                   const prioColor =
                     PRIORITY_COLOR[ch.priority] ?? PRIORITY_COLOR.tier_3;
                   const hasErrors = ch.consecutiveErrors > 2;
+                  const hasWarning = Boolean(ch.lastScrapeWarning);
 
                   return (
                     <div key={ch.handle} className="ch-item">
@@ -269,7 +273,7 @@ export default async function ChannelsPage() {
                               textDecoration: "none",
                             }}
                           >
-                            @{ch.handle} ↗
+                            @{ch.handle} open
                           </a>
                           {ch.nameRu && (
                             <span
@@ -313,6 +317,18 @@ export default async function ChannelsPage() {
                               {ch.language.toUpperCase()}
                             </span>
                           )}
+                          {hasWarning && (
+                            <span
+                              className="ch-badge"
+                              style={{
+                                background: "var(--amber-faint)",
+                                color: "var(--amber)",
+                              }}
+                              title={ch.lastScrapeWarning ?? undefined}
+                            >
+                              no public posts
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -329,8 +345,10 @@ export default async function ChannelsPage() {
                           }}
                         >
                           {hasErrors
-                            ? `⚠ ${ch.consecutiveErrors} consecutive errors`
-                            : `scraped ${relTime(ch.lastScrapedAt)}`}
+                            ? `${ch.consecutiveErrors} consecutive errors`
+                            : hasWarning
+                              ? `no public posts ${relTime(ch.lastScrapedAt)}`
+                              : `scraped ${relTime(ch.lastScrapedAt)} - ${ch.lastParsedCount} parsed - ${ch.lastNewMessages} new`}
                         </span>
                       </div>
                     </div>

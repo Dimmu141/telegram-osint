@@ -5,10 +5,14 @@ on:
     - cron: "15 */1 * * *"
   workflow_dispatch:
 
+concurrency:
+  group: telegram-osint-classify
+  cancel-in-progress: false
+
 jobs:
   classify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v4

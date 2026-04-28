@@ -5,7 +5,7 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Pipeline status — Telegram OSINT",
+  title: "Pipeline status - Telegram OSINT",
   description:
     "Live scrape, classification, queue, and channel health signals for Telegram OSINT.",
 };
@@ -33,7 +33,6 @@ function fmtUtc(d: Date | null): string {
     }) + " UTC"
   );
 }
-
 function statusTone(ok: boolean): { label: string; color: string; background: string } {
   return ok
     ? { label: "ok", color: "var(--moss)", background: "var(--moss-faint)" }
@@ -41,7 +40,9 @@ function statusTone(ok: boolean): { label: string; color: string; background: st
 }
 
 export default async function StatusPage() {
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const nowMs = now.getTime();
+  const since = new Date(nowMs - 24 * 60 * 60 * 1000);
 
   const [
     latestRun,
@@ -52,6 +53,7 @@ export default async function StatusPage() {
     recentClassified,
     activeChannels,
     failingChannels,
+    warningChannels,
   ] = await Promise.all([
     prisma.scrapeRun.findFirst({
       orderBy: { startedAt: "desc" },
@@ -106,19 +108,36 @@ export default async function StatusPage() {
         lastScrapedAt: true,
       },
     }),
+    prisma.channel.findMany({
+      where: { isActive: true, lastScrapeWarning: { not: null } },
+      orderBy: [{ lastEmptyScrapeAt: "desc" }, { handle: "asc" }],
+      take: 20,
+      select: {
+        handle: true,
+        nameEn: true,
+        category: true,
+        lastParsedCount: true,
+        lastNewMessages: true,
+        lastEmptyScrapeAt: true,
+        lastScrapeWarning: true,
+        lastScrapedAt: true,
+      },
+    }),
   ]);
 
   const minutesSinceScrape = latestRun?.finishedAt
-    ? Math.floor((Date.now() - latestRun.finishedAt.getTime()) / 60_000)
+    ? Math.floor((nowMs - latestRun.finishedAt.getTime()) / 60_000)
     : null;
   const minutesSinceClassify = latestClassify?.llmProcessedAt
-    ? Math.floor((Date.now() - latestClassify.llmProcessedAt.getTime()) / 60_000)
+    ? Math.floor((nowMs - latestClassify.llmProcessedAt.getTime()) / 60_000)
     : null;
 
   const scrapeOk = minutesSinceScrape !== null && minutesSinceScrape < 90;
   const classifyOk = minutesSinceClassify !== null && minutesSinceClassify < 120;
   const queueOk = queueDepth < 200;
-  const channelOk = failingChannels.filter((ch) => ch.consecutiveErrors > 2).length === 0;
+  const channelOk =
+    failingChannels.filter((ch) => ch.consecutiveErrors > 2).length === 0 &&
+    warningChannels.length === 0;
   const overallOk = scrapeOk && classifyOk && queueOk && channelOk;
 
   const modelCounts = new Map<string, number>();
@@ -133,20 +152,20 @@ export default async function StatusPage() {
     { label: "Last scrape", value: relTime(latestRun?.finishedAt ?? null), ok: scrapeOk, detail: fmtUtc(latestRun?.finishedAt ?? null) },
     { label: "Last classify", value: relTime(latestClassify?.llmProcessedAt ?? null), ok: classifyOk, detail: fmtUtc(latestClassify?.llmProcessedAt ?? null) },
     { label: "Queue", value: String(queueDepth), ok: queueOk, detail: "unprocessed messages" },
-    { label: "Channels", value: String(activeChannels), ok: channelOk, detail: `${failingChannels.length} with recent errors` },
+    { label: "Channels", value: String(activeChannels), ok: channelOk, detail: `${failingChannels.length} errors - ${warningChannels.length} without public posts` },
   ];
 
   return (
     <>
       <header className="topbar">
         <div className="topbar-inner">
-          <a href="/" className="brand">
+          <Link href="/" className="brand">
             <div className="brand-mark">tg</div>
             <div>
               <div className="brand-name">Telegram OSINT</div>
-              <div className="brand-sub">public · open source</div>
+              <div className="brand-sub">public - open source</div>
             </div>
-          </a>
+          </Link>
           <nav
             style={{
               display: "flex",
@@ -233,7 +252,7 @@ export default async function StatusPage() {
           </section>
 
           <section className="about-section">
-            <h2>Model mix · last 24 hours</h2>
+            <h2>Model mix - last 24 hours</h2>
             {models.length === 0 ? (
               <p>No classified messages in the last 24 hours.</p>
             ) : (
@@ -257,7 +276,7 @@ export default async function StatusPage() {
                     <div className="ch-item-head">
                       <div className="ch-item-name">
                         <span style={{ fontWeight: 600, fontSize: 14 }}>{channel.nameEn ?? channel.handle}</span>
-                        <a href={`https://t.me/s/${channel.handle}`} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-4)", textDecoration: "none" }}>@{channel.handle} ↗</a>
+                        <a href={`https://t.me/s/${channel.handle}`} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-4)", textDecoration: "none" }}>@{channel.handle} open</a>
                       </div>
                       <div className="ch-item-badges">
                         <span className="ch-badge" style={{ background: "var(--amber-faint)", color: "var(--amber)" }}>{channel.consecutiveErrors} errors</span>
@@ -273,12 +292,40 @@ export default async function StatusPage() {
           </section>
 
           <section className="about-section">
+            <h2>Channels without public posts</h2>
+            {warningChannels.length === 0 ? (
+              <p>No active channels have scrape warnings.</p>
+            ) : (
+              <div className="ch-list">
+                {warningChannels.map((channel) => (
+                  <div key={channel.handle} className="ch-item">
+                    <div className="ch-item-head">
+                      <div className="ch-item-name">
+                        <span style={{ fontWeight: 600, fontSize: 14 }}>{channel.nameEn ?? channel.handle}</span>
+                        <a href={`https://t.me/s/${channel.handle}`} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-4)", textDecoration: "none" }}>@{channel.handle} open</a>
+                      </div>
+                      <div className="ch-item-badges">
+                        <span className="ch-badge" style={{ background: "var(--amber-faint)", color: "var(--amber)" }}>no public posts</span>
+                        <span className="ch-badge" style={{ background: "var(--paper-3)", color: "var(--ink-3)" }}>{channel.category.replace(/_/g, " ")}</span>
+                      </div>
+                    </div>
+                    <p className="ch-item-notes">{channel.lastScrapeWarning}</p>
+                    <div className="ch-item-foot">
+                      last checked {relTime(channel.lastScrapedAt)} - no public posts since {relTime(channel.lastEmptyScrapeAt)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="about-section">
             <h2>Recent scrape runs</h2>
             <div className="health">
               {recentRuns.map((run) => (
                 <div key={run.startedAt.toISOString()} className="health-row">
                   <span className="k">{fmtUtc(run.startedAt)}</span>
-                  <span className="v">{run.channelsSucceeded}/{run.channelsAttempted} channels · {run.newMessages} new · {run.channelsFailed} failed</span>
+                  <span className="v">{run.channelsSucceeded}/{run.channelsAttempted} channels - {run.newMessages} new - {run.channelsFailed} failed</span>
                 </div>
               ))}
             </div>
