@@ -30,6 +30,8 @@ export default function AboutPage() {
           >
             <Link href="/" style={{ color: "var(--ink-3)", textDecoration: "none" }}>Feed</Link>
             <Link href="/channels" style={{ color: "var(--ink-3)", textDecoration: "none" }}>Channels</Link>
+            <Link href="/nordic" style={{ color: "var(--ink-3)", textDecoration: "none" }}>Nordic</Link>
+            <Link href="/narratives" style={{ color: "var(--ink-3)", textDecoration: "none" }}>Narratives</Link>
             <Link href="/status" style={{ color: "var(--ink-3)", textDecoration: "none" }}>Status</Link>
             <span style={{ color: "var(--ink)", fontWeight: 600 }}>About</span>
           </nav>
@@ -53,7 +55,7 @@ export default function AboutPage() {
             <div className="about-page-eyebrow">Methodology</div>
             <h1 className="about-page-title">How this works</h1>
             <p className="about-page-lead">
-              A free, open-source aggregator that monitors 63 Russian, Ukrainian,
+              A free, open-source aggregator that monitors Russian, Ukrainian,
               and Belarusian Telegram channels. Every post is scraped, translated
               into English, and classified by topic, significance, and named
               entities — then served here within minutes.

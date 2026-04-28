@@ -29,6 +29,7 @@ export interface HealthStats {
 interface EntityCount { name: string; count: number }
 interface HourlyCount { hour: number; count: number }
 interface BriefingData { bullets: string[]; generatedAt: string }
+interface ClaimCluster { key: string; label: string; count: number }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -96,6 +97,99 @@ const CATEGORY_LABELS: Record<string, string> = {
   belarusian:           "Belarusian",
 };
 
+const SOURCE_TRUST: Record<string, { label: string; note: string; color: string; bg: string }> = {
+  kremlin_official: {
+    label: "official",
+    note: "Official Kremlin or ministry source. Useful for position, not verification.",
+    color: "var(--signal)",
+    bg: "var(--signal-faint)",
+  },
+  state_media: {
+    label: "state media",
+    note: "Institutional Kremlin media. Treat as official narrative baseline.",
+    color: "var(--signal)",
+    bg: "var(--signal-faint)",
+  },
+  propagandist: {
+    label: "propaganda",
+    note: "Personality-driven pro-Kremlin propaganda or rhetoric channel.",
+    color: "var(--amber)",
+    bg: "var(--amber-faint)",
+  },
+  nationalist: {
+    label: "hardline",
+    note: "Nationalist or ideological pro-war source, often more extreme than official line.",
+    color: "var(--amber)",
+    bg: "var(--amber-faint)",
+  },
+  milblogger_frontline: {
+    label: "frontline",
+    note: "Frontline or embedded war source. Fast, useful, and often unverified.",
+    color: "var(--blue)",
+    bg: "var(--blue-faint)",
+  },
+  milblogger_analytical: {
+    label: "milblogger",
+    note: "War-analysis channel. Useful for narrative shifts and operational claims.",
+    color: "var(--blue)",
+    bg: "var(--blue-faint)",
+  },
+  milblogger: {
+    label: "milblogger",
+    note: "War blogger source. Treat claims as requiring corroboration.",
+    color: "var(--blue)",
+    bg: "var(--blue-faint)",
+  },
+  pmc: {
+    label: "pmc-linked",
+    note: "Private military company adjacent source.",
+    color: "var(--blue)",
+    bg: "var(--blue-faint)",
+  },
+  tabloid: {
+    label: "tabloid",
+    note: "Fast incident reporting, often noisy. Verify before use.",
+    color: "var(--amber)",
+    bg: "var(--amber-faint)",
+  },
+  exile_independent: {
+    label: "independent",
+    note: "Independent or exile media source.",
+    color: "var(--moss)",
+    bg: "var(--moss-faint)",
+  },
+  opposition: {
+    label: "opposition",
+    note: "Opposition or anti-war source.",
+    color: "var(--moss)",
+    bg: "var(--moss-faint)",
+  },
+  elite_analytical: {
+    label: "unverified",
+    note: "Anonymous insider or elite-analysis channel. Interesting, but high caution.",
+    color: "var(--amber)",
+    bg: "var(--amber-faint)",
+  },
+  business: {
+    label: "business",
+    note: "Economic or business source.",
+    color: "var(--moss)",
+    bg: "var(--moss-faint)",
+  },
+  ukrainian: {
+    label: "ukrainian",
+    note: "Ukrainian-side source included for context and cross-checking.",
+    color: "var(--moss)",
+    bg: "var(--moss-faint)",
+  },
+  belarusian: {
+    label: "belarus",
+    note: "Belarusian source with regional security relevance.",
+    color: "var(--moss)",
+    bg: "var(--moss-faint)",
+  },
+};
+
 const CATEGORY_ORDER = [
   "kremlin_official", "state_media", "propagandist",
   "milblogger_frontline", "milblogger_analytical", "milblogger",
@@ -136,15 +230,45 @@ function parseEntities(raw: unknown): Entities {
   return raw as Entities;
 }
 
+function claimKey(msg: MessageRow): string {
+  const entities = parseEntities(msg.entities);
+  const mainEntity =
+    entities.locations?.[0] ??
+    entities.organizations?.[0] ??
+    entities.people?.[0] ??
+    msg.channel.category;
+  return `${msg.topic ?? "other"}:${mainEntity.toLowerCase()}`;
+}
+
+function claimLabel(msg: MessageRow): string {
+  const entities = parseEntities(msg.entities);
+  const mainEntity =
+    entities.locations?.[0] ??
+    entities.organizations?.[0] ??
+    entities.people?.[0];
+  const topic = msg.topic?.replace(/_/g, " ") ?? "related claim";
+  return mainEntity ? `${topic} / ${mainEntity}` : topic;
+}
+
+function sourceTrust(category: string) {
+  return SOURCE_TRUST[category] ?? {
+    label: category.replace(/_/g, " "),
+    note: "Source category from the channel list.",
+    color: "var(--ink-3)",
+    bg: "var(--paper-3)",
+  };
+}
+
 // ─── Message card ─────────────────────────────────────────────────────────────
 
 function MessageCard({
-  msg, isNew, activeChannel, onChannelClick,
+  msg, isNew, activeChannel, onChannelClick, cluster,
 }: {
   msg: MessageRow;
   isNew: boolean;
   activeChannel: string;
   onChannelClick: (h: string) => void;
+  cluster: ClaimCluster | null;
 }) {
   const [showOrig, setShowOrig] = useState(false);
   const sig = msg.significance ?? "medium";
@@ -154,6 +278,7 @@ function MessageCard({
   const channelName = msg.channel.nameEn ?? `@${msg.channel.handle}`;
   const sourceLink = `https://t.me/${msg.telegramPostId}`;
   const permalink = `/m/${msg.id}`;
+  const trust = sourceTrust(msg.channel.category);
 
   const cardClass = [
     "msg",
@@ -178,9 +303,24 @@ function MessageCard({
           {channelName}
         </button>
         <span className="msg-handle">@{msg.channel.handle}</span>
+        <span
+          className="tag"
+          title={trust.note}
+          style={{ background: trust.bg, color: trust.color }}
+        >
+          {trust.label}
+        </span>
         <span className={topicClass}>{topicLabel}</span>
         {sig === "critical" && <span className="tag tag-sig-crit">critical</span>}
         {sig === "high"     && <span className="tag tag-sig-high">high</span>}
+        {cluster && cluster.count > 1 && (
+          <span
+            className="tag tag-other"
+            title={`${cluster.count} posts in the last 24h share this topic/entity cluster: ${cluster.label}`}
+          >
+            {cluster.count} related
+          </span>
+        )}
         {isNew              && <span className="tag tag-new">new</span>}
         <span className="msg-time">{fmtTime(msg.postedAt)}</span>
         <a href={permalink} className="msg-link" title="Permalink">¶</a>
@@ -314,6 +454,20 @@ export default function MessageFeed({
       return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
     });
   }, [filtered]);
+
+  const claimClusters = useMemo(() => {
+    const map = new Map<string, ClaimCluster>();
+    for (const msg of messages) {
+      const key = claimKey(msg);
+      const existing = map.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        map.set(key, { key, label: claimLabel(msg), count: 1 });
+      }
+    }
+    return map;
+  }, [messages]);
 
   // Sparkline
   const sparkMax = Math.max(...hourlyData.map((d) => d.count), 1);
@@ -536,6 +690,7 @@ export default function MessageFeed({
                     isNew={lastVisit !== null && new Date(m.postedAt) > lastVisit}
                     activeChannel={channelFilter}
                     onChannelClick={handleChannelClick}
+                    cluster={claimClusters.get(claimKey(m)) ?? null}
                   />
                 ))}
               </section>

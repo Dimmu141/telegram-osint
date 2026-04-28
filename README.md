@@ -6,7 +6,7 @@ The project is built for Nordic journalists, security analysts, and researchers 
 
 ## What It Does
 
-- Monitors 63 hand-curated public Telegram channels from `config/channels.yaml`.
+- Monitors hand-curated public Telegram channels from `config/channels.yaml` plus `config/russian-expansion.yaml`.
 - Scrapes `https://t.me/s/<handle>` public HTML previews. No Telegram account or API key is required for scraping.
 - Stores channels, messages, scrape runs, and daily briefings in Postgres via Prisma.
 - Translates posts to English and classifies topic, significance, entities, and summary.
@@ -17,6 +17,8 @@ The project is built for Nordic journalists, security analysts, and researchers 
 
 - `/` - analyst feed for the last 24 hours, with briefing, filters, entities, and pipeline summary.
 - `/channels` - channel transparency page with source category, stance, priority, notes, and scrape state.
+- `/nordic` - 72-hour watch view for Nordic, Baltic, NATO, Arctic, and nearby escalation terms.
+- `/narratives` - seven-day tracker for recurring claims and propaganda themes.
 - `/status` - operational trust view showing freshness, queue depth, model mix, scrape failures, and recent runs.
 - `/feed.xml` - RSS feed for high and critical significance items.
 - `/api/health` - machine-readable health endpoint for monitors.
@@ -38,7 +40,8 @@ The project is built for Nordic journalists, security analysts, and researchers 
 - `lib/telegram-scraper.ts` - public Telegram HTML scraper and parser.
 - `lib/classifier.ts` - LLM classification pipeline.
 - `scripts/` - CLI entrypoints used locally and by GitHub Actions.
-- `config/channels.yaml` - monitored channel list and editorial metadata.
+- `config/channels.yaml` - core monitored channel list and editorial metadata.
+- `config/russian-expansion.yaml` - additional Russian channels to broaden domestic, independent, and Z-channel coverage.
 - `prisma/schema.prisma` - database models.
 - `.github/workflows/` - scheduled scrape, classify, and briefing jobs.
 - `tests/` - lightweight smoke tests for code that can run without a live database.

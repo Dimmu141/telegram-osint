@@ -158,6 +158,8 @@ export default async function StatusPage() {
           >
             <Link href="/" style={{ color: "var(--ink-3)", textDecoration: "none" }}>Feed</Link>
             <Link href="/channels" style={{ color: "var(--ink-3)", textDecoration: "none" }}>Channels</Link>
+            <Link href="/nordic" style={{ color: "var(--ink-3)", textDecoration: "none" }}>Nordic</Link>
+            <Link href="/narratives" style={{ color: "var(--ink-3)", textDecoration: "none" }}>Narratives</Link>
             <span style={{ color: "var(--ink)", fontWeight: 600 }}>Status</span>
             <Link href="/about" style={{ color: "var(--ink-3)", textDecoration: "none" }}>About</Link>
           </nav>

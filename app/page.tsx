@@ -15,6 +15,7 @@ export default async function Home() {
     queueDepth,
     classifiedToday,
     todayBriefing,
+    activeChannelCount,
   ] = await Promise.all([
     prisma.message.findMany({
       where: {
@@ -53,6 +54,7 @@ export default async function Home() {
       where: { date: today },
       select: { bullets: true, generatedAt: true },
     }),
+    prisma.channel.count({ where: { isActive: true } }),
   ]);
 
   const rows: MessageRow[] = messages.map((m) => ({
@@ -90,7 +92,7 @@ export default async function Home() {
     lastClassifiedAt: latestClassify?.llmProcessedAt?.toISOString() ?? null,
     queueDepth,
     classifiedToday,
-    totalChannels: 63,
+    totalChannels: activeChannelCount,
   };
 
   const briefing = todayBriefing
@@ -129,6 +131,8 @@ export default async function Home() {
           </div>
           <div className="top-actions">
             <a href="/channels" className="nav-link">Channels</a>
+            <a href="/nordic" className="nav-link">Nordic</a>
+            <a href="/narratives" className="nav-link">Narratives</a>
             <a href="/status" className="nav-link">Status</a>
             <a href="/about" className="nav-link">About</a>
             <a href="/feed.xml" className="nav-link" title="RSS feed">RSS</a>

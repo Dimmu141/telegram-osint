@@ -175,6 +175,24 @@ export default async function ChannelsPage() {
               Channels
             </span>
             <Link
+              href="/nordic"
+              style={{ color: "var(--ink-3)", textDecoration: "none" }}
+            >
+              Nordic
+            </Link>
+            <Link
+              href="/narratives"
+              style={{ color: "var(--ink-3)", textDecoration: "none" }}
+            >
+              Narratives
+            </Link>
+            <Link
+              href="/status"
+              style={{ color: "var(--ink-3)", textDecoration: "none" }}
+            >
+              Status
+            </Link>
+            <Link
               href="/about"
               style={{ color: "var(--ink-3)", textDecoration: "none" }}
             >
