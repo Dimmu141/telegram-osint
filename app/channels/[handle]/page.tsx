@@ -2,26 +2,9 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { CATEGORY_LABELS, sourceContextForCategory, topicLabel } from "@/lib/editorial";
 
 export const revalidate = 300;
-
-const CATEGORY_LABELS: Record<string, string> = {
-  kremlin_official: "Kremlin Official",
-  state_media: "State Media",
-  propagandist: "Propagandist",
-  milblogger_frontline: "Frontline Reporter",
-  milblogger_analytical: "Military Analyst",
-  milblogger: "Military Blogger",
-  pmc: "PMC / Wagner-adjacent",
-  nationalist: "Nationalist",
-  tabloid: "Tabloid",
-  exile_independent: "Exile / Independent",
-  opposition: "Opposition",
-  elite_analytical: "Elite Analytical",
-  business: "Business",
-  ukrainian: "Ukrainian",
-  belarusian: "Belarusian",
-};
 
 const STANCE_LABEL: Record<string, string> = {
   pro_kremlin: "Pro-Kremlin",
@@ -49,10 +32,6 @@ function fmtTime(d: Date): string {
     minute: "2-digit",
     timeZone: "UTC",
   }) + " UTC";
-}
-
-function topicLabel(topic: string | null): string {
-  return topic?.replace(/_/g, " ") ?? "unclassified";
 }
 
 export async function generateMetadata(
@@ -136,6 +115,7 @@ export default async function ChannelDetailPage(
   const topTopics = [...topics.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
 
   const hasHealthIssue = channel.consecutiveErrors > 0 || Boolean(channel.lastScrapeWarning);
+  const sourceContext = sourceContextForCategory(channel.category);
 
   return (
     <>
@@ -178,6 +158,9 @@ export default async function ChannelDetailPage(
               @{channel.handle} is listed as {CATEGORY_LABELS[channel.category] ?? channel.category}
               {" "}with a {STANCE_LABEL[channel.stance] ?? channel.stance} stance. Use this page to judge
               what the source is, whether scraping is healthy, and what it has contributed recently.
+            </p>
+            <p className="source-context-note">
+              {sourceContext.label}: {sourceContext.note}
             </p>
           </div>
 

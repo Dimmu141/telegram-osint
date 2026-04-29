@@ -98,6 +98,22 @@ export default function AboutPage() {
             </section>
 
             <section className="about-section">
+              <h2>Editorial use policy</h2>
+              <p>
+                This dashboard is for monitoring and discovery. It is designed
+                to help journalists and analysts notice claims, rhetoric,
+                source behavior, and emerging topics faster.
+              </p>
+              <ul>
+                <li>Do not publish claims based only on this dashboard.</li>
+                <li>Always verify the original Telegram post and independent sources before publication.</li>
+                <li>Significance means potential editorial relevance, not factual truth.</li>
+                <li>Machine translation and AI classification can be wrong, especially for military terms, place names, and sarcasm.</li>
+                <li>Propaganda, milblogger, state media, and anonymous insider channels should be treated as narrative signals unless independently confirmed.</li>
+              </ul>
+            </section>
+
+            <section className="about-section">
               <h2>Channel selection</h2>
               <p>
                 Channels are hand-curated with a broad source mix covering official Russian state messaging, pro-war military reporting, independent Russian outlets, Ukrainian context, and Belarusian security coverage.
@@ -126,7 +142,7 @@ export default function AboutPage() {
               <ul>
                 <li><strong>English translation</strong> - full text translation, not paraphrase.</li>
                 <li><strong>Topic</strong> - military operations, strikes, casualties, escalation, regional security, politics, economics, propaganda, humanitarian, breaking news, opinion, or other.</li>
-                <li><strong>Significance</strong> - low, medium, high, or critical.</li>
+                <li><strong>Editorial relevance</strong> - low, medium, high, or critical. This is not a truth score.</li>
                 <li><strong>Entities</strong> - people, locations, organizations, and weapons.</li>
                 <li><strong>Summary</strong> - a short analyst note on what the post claims and why it may matter.</li>
               </ul>

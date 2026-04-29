@@ -3,6 +3,12 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import {
+  flaggedBecause,
+  parseEntities as parseEditorialEntities,
+  sourceContextForCategory,
+  textMatchesQuery,
+} from "@/lib/editorial";
 
 export interface MessageRow {
   id: string;
@@ -65,10 +71,13 @@ const TOPIC_OPTIONS = [
 
 const SOURCE_OPTIONS = [
   { label: "All sources", key: "all", categories: null },
-  { label: "Pro-Kremlin", key: "kremlin", categories: ["kremlin_official", "state_media", "propagandist", "nationalist"] },
-  { label: "Milbloggers", key: "military", categories: ["milblogger_frontline", "milblogger_analytical", "milblogger", "pmc"] },
-  { label: "Independent", key: "independent", categories: ["exile_independent", "opposition", "elite_analytical", "business"] },
-  { label: "Ukraine / Belarus", key: "peripheral", categories: ["ukrainian", "belarusian"] },
+  { label: "Official / State-aligned", key: "official", categories: ["kremlin_official", "state_media"] },
+  { label: "Milbloggers", key: "milbloggers", categories: ["milblogger_frontline", "milblogger_analytical", "milblogger", "pmc"] },
+  { label: "Propagandists / Nationalists", key: "propagandists", categories: ["propagandist", "nationalist"] },
+  { label: "Independent / Exile media", key: "independent", categories: ["exile_independent", "opposition", "ukrainian", "belarusian"] },
+  { label: "Anonymous / Elite rumor channels", key: "rumor", categories: ["elite_analytical"] },
+  { label: "Business / Economic", key: "business", categories: ["business"] },
+  { label: "Tabloid / Incident wires", key: "tabloid", categories: ["tabloid"] },
 ] as const;
 
 const SIG_OPTIONS = [
@@ -97,114 +106,21 @@ const TOPIC_TAG_CLASS: Record<string, string> = {
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
-  kremlin_official: "Kremlin Official",
+  kremlin_official: "Official / Kremlin",
   state_media: "State Media",
   propagandist: "Propagandists",
-  milblogger_frontline: "Frontline Reporters",
+  milblogger_frontline: "Frontline Milbloggers",
   milblogger_analytical: "Military Analysts",
   milblogger: "Military Bloggers",
-  pmc: "PMC",
-  nationalist: "Nationalist",
-  tabloid: "Tabloid",
-  exile_independent: "Exile / Independent",
-  opposition: "Opposition",
-  elite_analytical: "Elite Analytical",
-  business: "Business",
-  ukrainian: "Ukrainian",
-  belarusian: "Belarusian",
-};
-
-const SOURCE_TRUST: Record<string, { label: string; note: string; color: string; bg: string }> = {
-  kremlin_official: {
-    label: "official",
-    note: "Official Kremlin or ministry source. Useful for position, not verification.",
-    color: "var(--signal)",
-    bg: "var(--signal-faint)",
-  },
-  state_media: {
-    label: "state media",
-    note: "Institutional Kremlin media. Treat as official narrative baseline.",
-    color: "var(--signal)",
-    bg: "var(--signal-faint)",
-  },
-  propagandist: {
-    label: "propaganda",
-    note: "Personality-driven pro-Kremlin propaganda or rhetoric channel.",
-    color: "var(--amber)",
-    bg: "var(--amber-faint)",
-  },
-  nationalist: {
-    label: "hardline",
-    note: "Nationalist or ideological pro-war source, often more extreme than official line.",
-    color: "var(--amber)",
-    bg: "var(--amber-faint)",
-  },
-  milblogger_frontline: {
-    label: "frontline",
-    note: "Frontline or embedded war source. Fast, useful, and often unverified.",
-    color: "var(--blue)",
-    bg: "var(--blue-faint)",
-  },
-  milblogger_analytical: {
-    label: "milblogger",
-    note: "War-analysis channel. Useful for narrative shifts and operational claims.",
-    color: "var(--blue)",
-    bg: "var(--blue-faint)",
-  },
-  milblogger: {
-    label: "milblogger",
-    note: "War blogger source. Treat claims as requiring corroboration.",
-    color: "var(--blue)",
-    bg: "var(--blue-faint)",
-  },
-  pmc: {
-    label: "pmc-linked",
-    note: "Private military company adjacent source.",
-    color: "var(--blue)",
-    bg: "var(--blue-faint)",
-  },
-  tabloid: {
-    label: "tabloid",
-    note: "Fast incident reporting, often noisy. Verify before use.",
-    color: "var(--amber)",
-    bg: "var(--amber-faint)",
-  },
-  exile_independent: {
-    label: "independent",
-    note: "Independent or exile media source.",
-    color: "var(--moss)",
-    bg: "var(--moss-faint)",
-  },
-  opposition: {
-    label: "opposition",
-    note: "Opposition or anti-war source.",
-    color: "var(--moss)",
-    bg: "var(--moss-faint)",
-  },
-  elite_analytical: {
-    label: "unverified",
-    note: "Anonymous insider or elite-analysis channel. Interesting, but high caution.",
-    color: "var(--amber)",
-    bg: "var(--amber-faint)",
-  },
-  business: {
-    label: "business",
-    note: "Economic or business source.",
-    color: "var(--moss)",
-    bg: "var(--moss-faint)",
-  },
-  ukrainian: {
-    label: "ukrainian",
-    note: "Ukrainian-side source included for context and cross-checking.",
-    color: "var(--moss)",
-    bg: "var(--moss-faint)",
-  },
-  belarusian: {
-    label: "belarus",
-    note: "Belarusian source with regional security relevance.",
-    color: "var(--moss)",
-    bg: "var(--moss-faint)",
-  },
+  pmc: "PMC-linked",
+  nationalist: "Nationalists",
+  tabloid: "Tabloid / Incident wires",
+  exile_independent: "Exile / Independent media",
+  opposition: "Opposition sources",
+  elite_analytical: "Anonymous / Elite rumor channels",
+  business: "Business / Economic",
+  ukrainian: "Ukrainian sources",
+  belarusian: "Belarusian sources",
 };
 
 const CATEGORY_ORDER = [
@@ -242,18 +158,7 @@ interface Entities {
 }
 
 function parseEntities(raw: unknown): Entities {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
-  return raw as Entities;
-}
-
-function entityTerms(msg: MessageRow): string[] {
-  const entities = parseEntities(msg.entities);
-  return [
-    ...(entities.people ?? []),
-    ...(entities.locations ?? []),
-    ...(entities.organizations ?? []),
-    ...(entities.weapons ?? []),
-  ];
+  return parseEditorialEntities(raw);
 }
 
 function claimKey(msg: MessageRow): string {
@@ -279,12 +184,7 @@ function claimLabel(msg: MessageRow): string {
 }
 
 function sourceTrust(category: string) {
-  return SOURCE_TRUST[category] ?? {
-    label: category.replace(/_/g, " "),
-    note: "Source category from the channel list.",
-    color: "var(--ink-3)",
-    bg: "var(--paper-3)",
-  };
+  return sourceContextForCategory(category);
 }
 
 function citationFor(msg: MessageRow): string {
@@ -375,6 +275,7 @@ function MessageCard({
   const sourceLink = `https://t.me/${msg.telegramPostId}`;
   const permalink = `/m/${msg.id}`;
   const trust = sourceTrust(msg.channel.category);
+  const flagReason = flaggedBecause(msg.significance, msg.topic, msg.channel.category);
 
   const cardClass = [
     "msg",
@@ -404,8 +305,8 @@ function MessageCard({
           {trust.label}
         </span>
         <span className={topicClass}>{topicLabel}</span>
-        {sig === "critical" && <span className="tag tag-sig-crit">critical</span>}
-        {sig === "high" && <span className="tag tag-sig-high">high</span>}
+        {sig === "critical" && <span className="tag tag-sig-crit">critical relevance</span>}
+        {sig === "high" && <span className="tag tag-sig-high">high relevance</span>}
         {cluster && cluster.count > 1 && (
           <span
             className="tag tag-other"
@@ -443,6 +344,8 @@ function MessageCard({
           {tags.map((t) => <span key={t} className="ent-tag">{t}</span>)}
         </div>
       )}
+
+      {flagReason && <div className="flagged-reason">{flagReason}</div>}
 
       <div className="msg-actions">
         <button className="msg-action" onClick={() => onToggleSaved(msg.id)}>
@@ -560,7 +463,7 @@ export default function MessageFeed({
       if (channelFilter && m.channel.handle !== channelFilter) return false;
       if (sigMin > 0 && (SIG_RANK[m.significance ?? "medium"] ?? 1) < sigMin) return false;
       if (sl) {
-        const hay = [
+        const fields = [
           m.translationEn ?? "",
           m.summary ?? "",
           m.text ?? "",
@@ -571,9 +474,10 @@ export default function MessageFeed({
           m.channel.category,
           m.channel.stance,
           m.channel.sourceType,
-          ...entityTerms(m),
-        ].join(" ").toLowerCase();
-        if (!hay.includes(sl)) return false;
+          m.topic ?? "",
+          m.significance ?? "",
+        ];
+        if (!textMatchesQuery(fields, m.entities, sl)) return false;
       }
       return true;
     });
@@ -632,10 +536,9 @@ export default function MessageFeed({
       cluster.firstSeen = cluster.messages[cluster.messages.length - 1]?.postedAt ?? cluster.firstSeen;
       cluster.sourceMix = [...categories].slice(0, 3).join(", ");
       cluster.verification =
-        cluster.channelCount >= 3 ? "cross-source signal" :
-        cluster.messages.some((m) => m.channel.category === "kremlin_official") ? "official claim" :
-        cluster.channelCount === 2 ? "two-source signal" :
-        "single-source signal";
+        cluster.channelCount >= 3 ? "related mentions across sources" :
+        cluster.channelCount === 2 ? "related mentions in two sources" :
+        "single-source mention";
     }
     return map;
   }, [messages]);
@@ -710,9 +613,10 @@ export default function MessageFeed({
 
       <div className="side-section">
         <div className="side-label">
-          Significance
+          Editorial relevance
           {sigKey !== "all" && <button className="clr" onClick={() => set("sig", "all")}>reset</button>}
         </div>
+        <div className="filter-note">High relevance means worth reviewing, not confirmed true.</div>
         <div className="sig-row">
           {SIG_OPTIONS.map((o) => (
             <button key={o.key} className={sigKey === o.key ? "active" : ""} onClick={() => set("sig", o.key)}>
@@ -785,6 +689,9 @@ export default function MessageFeed({
               <div className="feed-meta">
                 <b>{totalCount}</b> classified - {nowStr}
               </div>
+            </div>
+            <div className="feed-caveat">
+              Significance is editorial relevance, not verification. Treat posts as discovery signals until checked against original and independent sources.
             </div>
 
             {briefing && (

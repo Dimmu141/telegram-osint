@@ -2,24 +2,20 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
+import CopyCitationButton from "./CopyCitationButton";
+import {
+  flaggedBecause,
+  parseEntities,
+  relevanceLabel,
+  sourceContextForCategory,
+  topicLabel,
+} from "@/lib/editorial";
 
 export const revalidate = 3600;
 
-const TOPIC_LABEL: Record<string, string> = {
-  military_operations: "Military operations",
-  strikes_air_defense: "Strikes / air defence",
-  casualties_losses: "Casualties & losses",
-  escalation_rhetoric: "Escalation rhetoric",
-  nordic_relevance: "regional security",
-  political_domestic: "Domestic politics",
-  political_foreign: "Foreign policy",
-  economic: "Economic",
-  propaganda: "Propaganda",
-  humanitarian: "Humanitarian",
-  breaking_news: "Breaking news",
-  opinion_analysis: "Opinion & analysis",
-  other: "Other",
-};
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
 export async function generateMetadata({
   params,
@@ -78,19 +74,14 @@ export default async function MessagePage({
       postedAt: true,
       llmModel: true,
       channel: {
-        select: { handle: true, nameEn: true, nameRu: true, category: true },
+        select: { handle: true, nameEn: true, nameRu: true, category: true, stance: true, sourceType: true },
       },
     },
   });
 
   if (!msg) notFound();
 
-  const ents = msg.entities as {
-    people?: string[];
-    locations?: string[];
-    organizations?: string[];
-    weapons?: string[];
-  } | null;
+  const ents = parseEntities(msg.entities);
 
   const fmtDate = (iso: string) => {
     const d = new Date(iso);
@@ -105,6 +96,8 @@ export default async function MessagePage({
   };
 
   const sig = msg.significance ?? "medium";
+  const sourceContext = sourceContextForCategory(msg.channel.category);
+  const flagReason = flaggedBecause(msg.significance, msg.topic, msg.channel.category);
   const sigColor =
     sig === "critical"
       ? "var(--signal)"
@@ -115,6 +108,15 @@ export default async function MessagePage({
   const telegramUrl = msg.telegramPostId
     ? `https://t.me/${msg.telegramPostId}`
     : null;
+  const postedIso = msg.postedAt instanceof Date ? msg.postedAt.toISOString() : String(msg.postedAt);
+  const localPermalink = `${SITE_URL}/m/${msg.id}`;
+  const citation = [
+    `${msg.channel.nameEn ?? `@${msg.channel.handle}`} (@${msg.channel.handle}), ${fmtDate(postedIso)}`,
+    msg.translationEn ?? msg.text ?? "",
+    `Telegram OSINT: ${localPermalink}`,
+    telegramUrl ? `Original Telegram: ${telegramUrl}` : null,
+    "Machine translation and AI classification. Verify before publication.",
+  ].filter(Boolean).join("\n");
 
   return (
     <>
@@ -186,7 +188,7 @@ export default async function MessagePage({
             <div className="msg-page-tags">
               {msg.topic && (
                 <span className="tag tag-other">
-                  {TOPIC_LABEL[msg.topic] ?? msg.topic.replace(/_/g, " ")}
+                  {topicLabel(msg.topic)}
                 </span>
               )}
               {sig !== "medium" && sig !== "low" && (
@@ -203,9 +205,16 @@ export default async function MessagePage({
                     color: "var(--paper)",
                   }}
                 >
-                  {sig}
+                  {relevanceLabel(sig)}
                 </span>
               )}
+              <span
+                className="tag"
+                title={sourceContext.note}
+                style={{ background: sourceContext.bg, color: sourceContext.color }}
+              >
+                {sourceContext.label}
+              </span>
             </div>
           </div>
 
@@ -218,7 +227,22 @@ export default async function MessagePage({
               letterSpacing: "0.03em",
             }}
           >
-            {fmtDate(msg.postedAt instanceof Date ? msg.postedAt.toISOString() : String(msg.postedAt))}
+            {fmtDate(postedIso)}
+          </div>
+
+          <div className="use-verify">
+            <div className="analysis-lbl">Use / verify</div>
+            <dl className="use-verify-grid">
+              <div><dt>Source</dt><dd>{msg.channel.nameEn ?? `@${msg.channel.handle}`} (@{msg.channel.handle})</dd></div>
+              <div><dt>Posted</dt><dd>{fmtDate(postedIso)}</dd></div>
+              <div><dt>Original</dt><dd>{telegramUrl ? <a href={telegramUrl} target="_blank" rel="noopener noreferrer">Telegram post</a> : "unavailable"}</dd></div>
+              <div><dt>Permalink</dt><dd><a href={localPermalink}>{localPermalink}</a></dd></div>
+              <div><dt>Translation</dt><dd>machine-generated</dd></div>
+              <div><dt>Classification</dt><dd>AI-generated{msg.llmModel ? ` (${msg.llmModel})` : ""}</dd></div>
+            </dl>
+            <p>Use this as a discovery signal. Verify the original Telegram post and independent sources before publication.</p>
+            {flagReason && <div className="flagged-reason">{flagReason}</div>}
+            <CopyCitationButton citation={citation} />
           </div>
 
           {/* Translation */}
@@ -239,7 +263,7 @@ export default async function MessagePage({
           {/* Entities */}
           {ents && (
             <div style={{ marginBottom: 20 }}>
-              {ents.people && ents.people.length > 0 && (
+              {ents.people.length > 0 && (
                 <div className="msg-page-entity-group">
                   <span
                     style={{
@@ -263,7 +287,7 @@ export default async function MessagePage({
                   </div>
                 </div>
               )}
-              {ents.locations && ents.locations.length > 0 && (
+              {ents.locations.length > 0 && (
                 <div className="msg-page-entity-group">
                   <span
                     style={{
@@ -287,7 +311,7 @@ export default async function MessagePage({
                   </div>
                 </div>
               )}
-              {ents.organizations && ents.organizations.length > 0 && (
+              {ents.organizations.length > 0 && (
                 <div className="msg-page-entity-group">
                   <span
                     style={{
@@ -306,6 +330,30 @@ export default async function MessagePage({
                     {ents.organizations.map((o) => (
                       <span key={o} className="ent-tag">
                         {o}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {ents.weapons.length > 0 && (
+                <div className="msg-page-entity-group">
+                  <span
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: 9.5,
+                      color: "var(--ink-4)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      display: "block",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Weapons
+                  </span>
+                  <div className="entities">
+                    {ents.weapons.map((w) => (
+                      <span key={w} className="ent-tag">
+                        {w}
                       </span>
                     ))}
                   </div>

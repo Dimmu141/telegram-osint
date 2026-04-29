@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { parseEntities } from "@/lib/editorial";
 import MessageFeed, { type MessageRow, type HealthStats } from "./components/MessageFeed";
 
 export const revalidate = 300;
@@ -74,9 +75,8 @@ export default async function Home() {
 
   const entityCounts = new Map<string, number>();
   for (const m of messages) {
-    const ents = m.entities as { people?: string[]; locations?: string[]; organizations?: string[] } | null;
-    if (!ents) continue;
-    for (const list of [ents.people ?? [], ents.locations ?? [], ents.organizations ?? []]) {
+    const ents = parseEntities(m.entities);
+    for (const list of [ents.people, ents.locations, ents.organizations, ents.weapons]) {
       for (const e of list) {
         if (e.length > 1) entityCounts.set(e, (entityCounts.get(e) ?? 0) + 1);
       }
