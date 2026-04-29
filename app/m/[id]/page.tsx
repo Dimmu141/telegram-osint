@@ -10,7 +10,7 @@ const TOPIC_LABEL: Record<string, string> = {
   strikes_air_defense: "Strikes / air defence",
   casualties_losses: "Casualties & losses",
   escalation_rhetoric: "Escalation rhetoric",
-  nordic_relevance: "Nordic relevance",
+  nordic_relevance: "regional security",
   political_domestic: "Domestic politics",
   political_foreign: "Foreign policy",
   economic: "Economic",
@@ -35,7 +35,7 @@ export async function generateMetadata({
       channel: { select: { nameEn: true, handle: true } },
     },
   });
-  if (!msg) return { title: "Message not found — Telegram OSINT" };
+  if (!msg) return { title: "Message not found - Telegram OSINT" };
 
   const title =
     msg.translationEn?.split(/[.!?\n]/)[0]?.trim().slice(0, 100) ??
@@ -46,7 +46,7 @@ export async function generateMetadata({
     "Classified message from Russian-language Telegram.";
 
   return {
-    title: `${title} — Telegram OSINT`,
+    title: `${title} - Telegram OSINT`,
     description,
     openGraph: {
       title,
@@ -121,13 +121,13 @@ export default async function MessagePage({
       {/* Topbar */}
       <header className="topbar">
         <div className="topbar-inner">
-          <a href="/" className="brand">
+          <Link href="/" className="brand">
             <div className="brand-mark">tg</div>
             <div>
               <div className="brand-name">Telegram OSINT</div>
-              <div className="brand-sub">public · open source</div>
+              <div className="brand-sub">public - open source</div>
             </div>
-          </a>
+          </Link>
           <nav
             style={{
               display: "flex",
@@ -138,7 +138,7 @@ export default async function MessagePage({
             }}
           >
             <Link href="/" style={{ color: "var(--ink-3)", textDecoration: "none" }}>
-              ← Feed
+              Feed
             </Link>
             <Link href="/channels" style={{ color: "var(--ink-3)", textDecoration: "none" }}>
               Channels
@@ -155,7 +155,7 @@ export default async function MessagePage({
               className="icon-btn"
               title="GitHub"
             >
-              ↗
+              GH
             </a>
           </div>
         </div>
@@ -167,9 +167,12 @@ export default async function MessagePage({
           {/* Meta row */}
           <div className="msg-page-meta">
             <div className="msg-page-channel">
-              <span style={{ fontWeight: 600, fontSize: 15 }}>
+              <Link
+                href={`/channels/${msg.channel.handle}`}
+                style={{ fontWeight: 600, fontSize: 15, color: "var(--ink)", textDecoration: "none" }}
+              >
                 {msg.channel.nameEn ?? `@${msg.channel.handle}`}
-              </span>
+              </Link>
               <span
                 style={{
                   fontFamily: "var(--mono)",
@@ -343,11 +346,11 @@ export default async function MessagePage({
                 rel="noopener noreferrer"
                 className="msg-page-btn"
               >
-                View on Telegram ↗
+                View on Telegram
               </a>
             )}
             <Link href="/" className="msg-page-btn-secondary">
-              ← Back to feed
+              Back to feed
             </Link>
           </div>
 
@@ -363,7 +366,7 @@ export default async function MessagePage({
               letterSpacing: "0.04em",
             }}
           >
-            Classified by {msg.llmModel ?? "LLM"} · Telegram OSINT ·{" "}
+            Classified by {msg.llmModel ?? "LLM"} - Telegram OSINT -{" "}
             <a
               href="https://github.com/Dimmu141/telegram-osint"
               target="_blank"

@@ -32,14 +32,14 @@ const siteUrl =
     : "http://localhost:3000");
 
 export const metadata: Metadata = {
-  title: "Telegram OSINT — Russian-language channel monitor",
+  title: "Telegram OSINT - Russian-language channel monitor",
   description:
-    "63 Russian, Ukrainian and Belarusian Telegram channels — translated and classified for Nordic journalists and security analysts.",
+    "Russian, Ukrainian and Belarusian Telegram channels translated and classified for journalists, researchers and security analysts.",
   metadataBase: new URL(siteUrl),
   openGraph: {
-    title: "Telegram OSINT — Russian-language channel monitor",
+    title: "Telegram OSINT - Russian-language channel monitor",
     description:
-      "63 Russian, Ukrainian and Belarusian Telegram channels — scraped every 30 min, translated to English, classified by topic and significance. Built for Nordic journalists and security analysts.",
+      "Russian, Ukrainian and Belarusian Telegram channels scraped every 30 min, translated to English, classified by topic and significance.",
     url: siteUrl,
     siteName: "Telegram OSINT",
     type: "website",
@@ -47,9 +47,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Telegram OSINT — Russian-language channel monitor",
+    title: "Telegram OSINT - Russian-language channel monitor",
     description:
-      "63 Russian, Ukrainian and Belarusian Telegram channels — translated and classified for Nordic journalists and security analysts.",
+      "Russian, Ukrainian and Belarusian Telegram channels translated and classified for journalists, researchers and security analysts.",
   },
   alternates: {
     types: {

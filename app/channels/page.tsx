@@ -43,7 +43,7 @@ const CATEGORY_DESC: Record<string, string> = {
   elite_analytical: "Anonymous 'insider' channels. Treat with caution - potentially IO instruments.",
   business: "Russian economic and business coverage.",
   ukrainian: "Ukrainian sources included for reaction and context.",
-  belarusian: "Belarusian opposition and security coverage - direct Nordic interest.",
+  belarusian: "Belarusian opposition and security coverage with regional security relevance.",
 };
 
 const CATEGORY_ORDER = [
@@ -114,6 +114,7 @@ export default async function ChannelsPage() {
       category: true,
       stance: true,
       priority: true,
+      sourceType: true,
       notes: true,
       language: true,
       lastScrapedAt: true,
@@ -177,12 +178,6 @@ export default async function ChannelsPage() {
             <span style={{ color: "var(--ink)", fontWeight: 600 }}>
               Channels
             </span>
-            <Link
-              href="/nordic"
-              style={{ color: "var(--ink-3)", textDecoration: "none" }}
-            >
-              Nordic
-            </Link>
             <Link
               href="/narratives"
               style={{ color: "var(--ink-3)", textDecoration: "none" }}
@@ -259,9 +254,17 @@ export default async function ChannelsPage() {
                     <div key={ch.handle} className="ch-item">
                       <div className="ch-item-head">
                         <div className="ch-item-name">
-                          <span style={{ fontWeight: 600, fontSize: 14 }}>
+                          <Link
+                            href={`/channels/${ch.handle}`}
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 14,
+                              color: "var(--ink)",
+                              textDecoration: "none",
+                            }}
+                          >
                             {ch.nameEn ?? ch.handle}
-                          </span>
+                          </Link>
                           <a
                             href={`https://t.me/s/${ch.handle}`}
                             target="_blank"
@@ -305,6 +308,15 @@ export default async function ChannelsPage() {
                             }}
                           >
                             {STANCE_LABEL[ch.stance] ?? ch.stance}
+                          </span>
+                          <span
+                            className="ch-badge"
+                            style={{
+                              background: "var(--paper-2)",
+                              color: "var(--ink-3)",
+                            }}
+                          >
+                            {ch.sourceType.replace(/_/g, " ")}
                           </span>
                           {ch.language !== "ru" && (
                             <span

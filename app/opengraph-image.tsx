@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Telegram OSINT — Russian-language channel monitor";
+export const alt = "Telegram OSINT - Russian-language channel monitor";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -75,7 +75,7 @@ export default async function Image() {
                 textTransform: "uppercase",
               }}
             >
-              public · open source
+              public - open source
             </div>
           </div>
         </div>
@@ -108,9 +108,9 @@ export default async function Image() {
             marginBottom: 48,
           }}
         >
-          63 Russian, Ukrainian and Belarusian channels — scraped every
-          30 minutes, classified by topic and significance, built for Nordic
-          journalists and security analysts.
+          Russian, Ukrainian and Belarusian channels scraped every
+          30 minutes, classified by topic and significance for journalists
+          and security analysts.
         </div>
 
         {/* Footer stats */}
@@ -128,11 +128,11 @@ export default async function Image() {
           }}
         >
           <span>63 CHANNELS</span>
-          <span>·</span>
+          <span>-</span>
           <span>EVERY 30 MIN</span>
-          <span>·</span>
-          <span>FREE · OPEN SOURCE</span>
-          <span>·</span>
+          <span>-</span>
+          <span>FREE - OPEN SOURCE</span>
+          <span>-</span>
           <span>github.com/Dimmu141/telegram-osint</span>
         </div>
 

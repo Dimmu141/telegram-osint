@@ -62,7 +62,7 @@ export async function GET() {
     <guid isPermaLink="true">${link}</guid>
     <pubDate>${pubDate}</pubDate>
     <category>${category}</category>
-    <description><![CDATA[<p><strong>${esc(m.significance ?? "high")}</strong> significance · <strong>${channelName}</strong> (@${esc(m.channel.handle)})</p><p>${esc(desc)}</p><p><a href="${link}">View on Telegram OSINT</a> · <a href="https://t.me/${esc(m.telegramPostId ?? "")}">Source on Telegram</a></p>]]></description>
+    <description><![CDATA[<p><strong>${esc(m.significance ?? "high")}</strong> significance - <strong>${channelName}</strong> (@${esc(m.channel.handle)})</p><p>${esc(desc)}</p><p><a href="${link}">View on Telegram OSINT</a> - <a href="https://t.me/${esc(m.telegramPostId ?? "")}">Source on Telegram</a></p>]]></description>
   </item>`;
     })
     .join("\n");
@@ -70,10 +70,10 @@ export async function GET() {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>Telegram OSINT — High significance alerts</title>
+    <title>Telegram OSINT - High significance alerts</title>
     <link>${BASE_URL}</link>
     <atom:link href="${BASE_URL}/feed.xml" rel="self" type="application/rss+xml"/>
-    <description>High and critical significance posts from 63 Russian, Ukrainian and Belarusian Telegram channels, translated to English and classified by topic. Built for Nordic journalists and security analysts.</description>
+    <description>High and critical significance posts from Russian, Ukrainian and Belarusian Telegram channels, translated to English and classified by topic for journalists and security analysts.</description>
     <language>en</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <ttl>15</ttl>

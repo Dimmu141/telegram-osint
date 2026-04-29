@@ -1,12 +1,14 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import MessageFeed, { type MessageRow, type HealthStats } from "./components/MessageFeed";
 
 export const revalidate = 300;
 
 export default async function Home() {
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const today = now.toISOString().slice(0, 10);
 
   const [
     messages,
@@ -34,7 +36,15 @@ export default async function Home() {
         entities: true,
         summary: true,
         postedAt: true,
-        channel: { select: { handle: true, nameEn: true, category: true } },
+        channel: {
+          select: {
+            handle: true,
+            nameEn: true,
+            category: true,
+            stance: true,
+            sourceType: true,
+          },
+        },
       },
     }),
     prisma.scrapeRun.findFirst({
@@ -111,32 +121,31 @@ export default async function Home() {
     <>
       <header className="topbar">
         <div className="topbar-inner">
-          <a href="/" className="brand">
+          <Link href="/" className="brand">
             <div className="brand-mark">tg</div>
             <div>
               <div className="brand-name">Telegram OSINT</div>
-              <div className="brand-sub">public · open source</div>
+              <div className="brand-sub">public - open source</div>
             </div>
-          </a>
+          </Link>
           <div className="top-status">
             <div className="stat"><span className="dot" /> <b>live</b></div>
             <div className="stat">
-              scraped <b>{healthStats.lastScrapedAt ? formatRelativeServer(healthStats.lastScrapedAt) : "—"}</b>
+              scraped <b>{healthStats.lastScrapedAt ? formatRelativeServer(healthStats.lastScrapedAt) : "-"}</b>
             </div>
             <div className="stat">
-              classified <b>{healthStats.lastClassifiedAt ? formatRelativeServer(healthStats.lastClassifiedAt) : "—"}</b>
+              classified <b>{healthStats.lastClassifiedAt ? formatRelativeServer(healthStats.lastClassifiedAt) : "-"}</b>
             </div>
             <div className="stat">queue <b>{queueDepth}</b></div>
-            <div className="stat"><b>{healthStats.totalChannels}</b> channels · <b>{classifiedToday}</b> today</div>
+            <div className="stat"><b>{healthStats.totalChannels}</b> channels - <b>{classifiedToday}</b> today</div>
           </div>
           <div className="top-actions">
-            <a href="/channels" className="nav-link">Channels</a>
-            <a href="/nordic" className="nav-link">Nordic</a>
-            <a href="/narratives" className="nav-link">Narratives</a>
-            <a href="/status" className="nav-link">Status</a>
-            <a href="/about" className="nav-link">About</a>
+            <Link href="/channels" className="nav-link">Channels</Link>
+            <Link href="/narratives" className="nav-link">Narratives</Link>
+            <Link href="/status" className="nav-link">Status</Link>
+            <Link href="/about" className="nav-link">About</Link>
             <a href="/feed.xml" className="nav-link" title="RSS feed">RSS</a>
-            <a href="https://github.com/Dimmu141/telegram-osint" target="_blank" rel="noopener noreferrer" className="icon-btn" title="GitHub">↗</a>
+            <a href="https://github.com/Dimmu141/telegram-osint" target="_blank" rel="noopener noreferrer" className="icon-btn" title="GitHub">GH</a>
           </div>
         </div>
       </header>

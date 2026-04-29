@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface MessageRow {
   id: string;
@@ -15,7 +14,13 @@ export interface MessageRow {
   entities: unknown;
   summary: string | null;
   postedAt: string;
-  channel: { handle: string; nameEn: string | null; category: string };
+  channel: {
+    handle: string;
+    nameEn: string | null;
+    category: string;
+    stance: string;
+    sourceType: string;
+  };
 }
 
 export interface HealthStats {
@@ -29,36 +34,48 @@ export interface HealthStats {
 interface EntityCount { name: string; count: number }
 interface HourlyCount { hour: number; count: number }
 interface BriefingData { bullets: string[]; generatedAt: string }
-interface ClaimCluster { key: string; label: string; count: number }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+interface ClaimCluster {
+  key: string;
+  label: string;
+  count: number;
+  messages: MessageRow[];
+  channelCount: number;
+  highCount: number;
+  criticalCount: number;
+  firstSeen: string;
+  latestSeen: string;
+  sourceMix: string;
+  verification: string;
+}
+
+type ViewMode = "stories" | "feed" | "saved";
 
 const TOPIC_OPTIONS = [
-  { label: "All topics",        key: "all",       topics: null },
-  { label: "Military",          key: "military",  topics: ["military_operations", "breaking_news"] },
-  { label: "Strikes / Air Def", key: "strikes",   topics: ["strikes_air_defense"] },
-  { label: "Casualties",        key: "casualties",topics: ["casualties_losses"] },
-  { label: "Escalation",        key: "escalation",topics: ["escalation_rhetoric"] },
-  { label: "Nordic relevance",  key: "nordic",    topics: ["nordic_relevance"] },
-  { label: "Political",         key: "political", topics: ["political_domestic", "political_foreign", "opinion_analysis"] },
-  { label: "Economic",          key: "economic",  topics: ["economic"] },
-  { label: "Propaganda",        key: "propaganda",topics: ["propaganda"] },
+  { label: "All topics", key: "all", topics: null },
+  { label: "Military", key: "military", topics: ["military_operations", "breaking_news"] },
+  { label: "Strikes / Air Def", key: "strikes", topics: ["strikes_air_defense"] },
+  { label: "Casualties", key: "casualties", topics: ["casualties_losses"] },
+  { label: "Escalation", key: "escalation", topics: ["escalation_rhetoric"] },
+  { label: "Regional / NATO", key: "regional", topics: ["nordic_relevance"] },
+  { label: "Political", key: "political", topics: ["political_domestic", "political_foreign", "opinion_analysis"] },
+  { label: "Economic", key: "economic", topics: ["economic"] },
+  { label: "Propaganda", key: "propaganda", topics: ["propaganda"] },
 ] as const;
 
-// Simplified from 8 → 5 options (reader-friendly labels)
 const SOURCE_OPTIONS = [
-  { label: "All sources",       key: "all",        categories: null },
-  { label: "Pro-Kremlin",       key: "kremlin",    categories: ["kremlin_official", "state_media", "propagandist", "nationalist"] },
-  { label: "Milbloggers",       key: "military",   categories: ["milblogger_frontline", "milblogger_analytical", "milblogger", "pmc"] },
-  { label: "Independent",       key: "independent",categories: ["exile_independent", "opposition", "elite_analytical", "business"] },
-  { label: "Ukraine & Belarus", key: "peripheral", categories: ["ukrainian", "belarusian"] },
+  { label: "All sources", key: "all", categories: null },
+  { label: "Pro-Kremlin", key: "kremlin", categories: ["kremlin_official", "state_media", "propagandist", "nationalist"] },
+  { label: "Milbloggers", key: "military", categories: ["milblogger_frontline", "milblogger_analytical", "milblogger", "pmc"] },
+  { label: "Independent", key: "independent", categories: ["exile_independent", "opposition", "elite_analytical", "business"] },
+  { label: "Ukraine / Belarus", key: "peripheral", categories: ["ukrainian", "belarusian"] },
 ] as const;
 
 const SIG_OPTIONS = [
-  { label: "All",    key: "all",      min: 0 },
-  { label: "Med+",   key: "medium",   min: 1 },
-  { label: "High+",  key: "high",     min: 2 },
-  { label: "Crit",   key: "critical", min: 3 },
+  { label: "All", key: "all", min: 0 },
+  { label: "Med+", key: "medium", min: 1 },
+  { label: "High+", key: "high", min: 2 },
+  { label: "Crit", key: "critical", min: 3 },
 ] as const;
 
 const SIG_RANK: Record<string, number> = { low: 0, medium: 1, high: 2, critical: 3 };
@@ -66,35 +83,35 @@ const SIG_RANK: Record<string, number> = { low: 0, medium: 1, high: 2, critical:
 const TOPIC_TAG_CLASS: Record<string, string> = {
   military_operations: "tag tag-mil",
   strikes_air_defense: "tag tag-strk",
-  casualties_losses:   "tag tag-cas",
+  casualties_losses: "tag tag-cas",
   escalation_rhetoric: "tag tag-esc",
-  nordic_relevance:    "tag tag-nor",
-  political_domestic:  "tag tag-pol",
-  political_foreign:   "tag tag-pol",
-  opinion_analysis:    "tag tag-pol",
-  economic:            "tag tag-eco",
-  propaganda:          "tag tag-prop",
-  humanitarian:        "tag tag-other",
-  breaking_news:       "tag tag-mil",
-  other:               "tag tag-other",
+  nordic_relevance: "tag tag-nor",
+  political_domestic: "tag tag-pol",
+  political_foreign: "tag tag-pol",
+  opinion_analysis: "tag tag-pol",
+  economic: "tag tag-eco",
+  propaganda: "tag tag-prop",
+  humanitarian: "tag tag-other",
+  breaking_news: "tag tag-mil",
+  other: "tag tag-other",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
-  kremlin_official:     "Kremlin Official",
-  state_media:          "State Media",
-  propagandist:         "Propagandists",
+  kremlin_official: "Kremlin Official",
+  state_media: "State Media",
+  propagandist: "Propagandists",
   milblogger_frontline: "Frontline Reporters",
-  milblogger_analytical:"Military Analysts",
-  milblogger:           "Military Bloggers",
-  pmc:                  "PMC",
-  nationalist:          "Nationalist",
-  tabloid:              "Tabloid",
-  exile_independent:    "Exile / Independent",
-  opposition:           "Opposition",
-  elite_analytical:     "Elite Analytical",
-  business:             "Business",
-  ukrainian:            "Ukrainian",
-  belarusian:           "Belarusian",
+  milblogger_analytical: "Military Analysts",
+  milblogger: "Military Bloggers",
+  pmc: "PMC",
+  nationalist: "Nationalist",
+  tabloid: "Tabloid",
+  exile_independent: "Exile / Independent",
+  opposition: "Opposition",
+  elite_analytical: "Elite Analytical",
+  business: "Business",
+  ukrainian: "Ukrainian",
+  belarusian: "Belarusian",
 };
 
 const SOURCE_TRUST: Record<string, { label: string; note: string; color: string; bg: string }> = {
@@ -198,8 +215,6 @@ const CATEGORY_ORDER = [
   "business", "ukrainian", "belarusian",
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function relTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60_000);
@@ -214,9 +229,9 @@ function fmtTime(iso: string): string {
   const d = new Date(iso);
   const day = d.getUTCDate();
   const mon = d.toLocaleString("en-GB", { month: "short", timeZone: "UTC" });
-  const hh  = String(d.getUTCHours()).padStart(2, "0");
-  const mm  = String(d.getUTCMinutes()).padStart(2, "0");
-  return `${day} ${mon} · ${hh}:${mm} UTC · ${relTime(iso)}`;
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${day} ${mon} - ${hh}:${mm} UTC - ${relTime(iso)}`;
 }
 
 interface Entities {
@@ -225,9 +240,20 @@ interface Entities {
   organizations?: string[];
   weapons?: string[];
 }
+
 function parseEntities(raw: unknown): Entities {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   return raw as Entities;
+}
+
+function entityTerms(msg: MessageRow): string[] {
+  const entities = parseEntities(msg.entities);
+  return [
+    ...(entities.people ?? []),
+    ...(entities.locations ?? []),
+    ...(entities.organizations ?? []),
+    ...(entities.weapons ?? []),
+  ];
 }
 
 function claimKey(msg: MessageRow): string {
@@ -236,6 +262,7 @@ function claimKey(msg: MessageRow): string {
     entities.locations?.[0] ??
     entities.organizations?.[0] ??
     entities.people?.[0] ??
+    entities.weapons?.[0] ??
     msg.channel.category;
   return `${msg.topic ?? "other"}:${mainEntity.toLowerCase()}`;
 }
@@ -245,7 +272,8 @@ function claimLabel(msg: MessageRow): string {
   const mainEntity =
     entities.locations?.[0] ??
     entities.organizations?.[0] ??
-    entities.people?.[0];
+    entities.people?.[0] ??
+    entities.weapons?.[0];
   const topic = msg.topic?.replace(/_/g, " ") ?? "related claim";
   return mainEntity ? `${topic} / ${mainEntity}` : topic;
 }
@@ -259,16 +287,84 @@ function sourceTrust(category: string) {
   };
 }
 
-// ─── Message card ─────────────────────────────────────────────────────────────
+function citationFor(msg: MessageRow): string {
+  const base = typeof window === "undefined" ? "" : window.location.origin;
+  const channelName = msg.channel.nameEn ?? `@${msg.channel.handle}`;
+  const text = msg.translationEn ?? msg.text ?? "";
+  return [
+    `${channelName} (@${msg.channel.handle}), ${fmtTime(msg.postedAt)}`,
+    text,
+    `${base}/m/${msg.id}`,
+    `Source: https://t.me/${msg.telegramPostId}`,
+  ].filter(Boolean).join("\n");
+}
+
+function StoryClusterCard({
+  cluster, onOpenClaim, onCopy,
+}: {
+  cluster: ClaimCluster;
+  onOpenClaim: (label: string) => void;
+  onCopy: (text: string) => void;
+}) {
+  const topMessages = cluster.messages.slice(0, 3);
+  const lead = topMessages[0];
+  const sigClass = cluster.criticalCount > 0 ? "crit" : cluster.highCount > 0 ? "high" : "";
+
+  return (
+    <article className={`story-card ${sigClass}`}>
+      <div className="story-head">
+        <div>
+          <div className="story-kicker">
+            {cluster.count} posts - {cluster.channelCount} sources - {cluster.verification}
+          </div>
+          <h2>{cluster.label}</h2>
+        </div>
+        <button className="msg-action" onClick={() => onOpenClaim(cluster.label)}>
+          Filter story
+        </button>
+      </div>
+      <div className="story-meta">
+        <span>latest {relTime(cluster.latestSeen)}</span>
+        <span>first {fmtTime(cluster.firstSeen)}</span>
+        <span>{cluster.sourceMix}</span>
+      </div>
+      <div className="story-posts">
+        {topMessages.map((msg) => (
+          <div key={msg.id} className="story-post">
+            <div className="story-post-head">
+              <Link href={`/channels/${msg.channel.handle}`}>{msg.channel.nameEn ?? `@${msg.channel.handle}`}</Link>
+              <span>{fmtTime(msg.postedAt)}</span>
+            </div>
+            <p>{msg.translationEn ?? msg.text ?? "No text extracted."}</p>
+            <div className="msg-actions">
+              <a className="msg-action" href={`/m/${msg.id}`}>Open post</a>
+              <a className="msg-action" href={`https://t.me/${msg.telegramPostId}`} target="_blank" rel="noopener noreferrer">Telegram</a>
+              <button className="msg-action" onClick={() => onCopy(citationFor(msg))}>Copy citation</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {lead?.summary && (
+        <div className="analysis story-analysis">
+          <div className="analysis-lbl">Analyst note</div>
+          <p>{lead.summary}</p>
+        </div>
+      )}
+    </article>
+  );
+}
 
 function MessageCard({
-  msg, isNew, activeChannel, onChannelClick, cluster,
+  msg, isNew, activeChannel, onChannelClick, cluster, isSaved, onToggleSaved, onCopy,
 }: {
   msg: MessageRow;
   isNew: boolean;
   activeChannel: string;
   onChannelClick: (h: string) => void;
   cluster: ClaimCluster | null;
+  isSaved: boolean;
+  onToggleSaved: (id: string) => void;
+  onCopy: (text: string) => void;
 }) {
   const [showOrig, setShowOrig] = useState(false);
   const sig = msg.significance ?? "medium";
@@ -290,7 +386,8 @@ function MessageCard({
     ...(entities.people ?? []),
     ...(entities.locations ?? []),
     ...(entities.organizations ?? []),
-  ].slice(0, 5);
+    ...(entities.weapons ?? []),
+  ].slice(0, 6);
 
   return (
     <article className={cardClass}>
@@ -302,17 +399,13 @@ function MessageCard({
         >
           {channelName}
         </button>
-        <span className="msg-handle">@{msg.channel.handle}</span>
-        <span
-          className="tag"
-          title={trust.note}
-          style={{ background: trust.bg, color: trust.color }}
-        >
+        <Link className="msg-handle" href={`/channels/${msg.channel.handle}`}>@{msg.channel.handle}</Link>
+        <span className="tag" title={trust.note} style={{ background: trust.bg, color: trust.color }}>
           {trust.label}
         </span>
         <span className={topicClass}>{topicLabel}</span>
         {sig === "critical" && <span className="tag tag-sig-crit">critical</span>}
-        {sig === "high"     && <span className="tag tag-sig-high">high</span>}
+        {sig === "high" && <span className="tag tag-sig-high">high</span>}
         {cluster && cluster.count > 1 && (
           <span
             className="tag tag-other"
@@ -321,20 +414,18 @@ function MessageCard({
             {cluster.count} related
           </span>
         )}
-        {isNew              && <span className="tag tag-new">new</span>}
+        {isNew && <span className="tag tag-new">new</span>}
         <span className="msg-time">{fmtTime(msg.postedAt)}</span>
-        <a href={permalink} className="msg-link" title="Permalink">¶</a>
-        <a href={sourceLink} target="_blank" rel="noopener noreferrer" className="msg-link" title="Open in Telegram">↗</a>
+        <a href={permalink} className="msg-link" title="Permalink">#</a>
+        <a href={sourceLink} target="_blank" rel="noopener noreferrer" className="msg-link" title="Open in Telegram">open</a>
       </div>
 
-      {msg.translationEn && (
-        <p className="msg-body">{msg.translationEn}</p>
-      )}
+      {msg.translationEn && <p className="msg-body">{msg.translationEn}</p>}
 
       {msg.text && (
         <>
           <button className="show-orig" onClick={() => setShowOrig((s) => !s)}>
-            {showOrig ? "▲ hide original" : "▼ show original Russian"}
+            {showOrig ? "hide original" : "show original"}
           </button>
           {showOrig && <p className="orig-text">{msg.text}</p>}
         </>
@@ -352,11 +443,21 @@ function MessageCard({
           {tags.map((t) => <span key={t} className="ent-tag">{t}</span>)}
         </div>
       )}
+
+      <div className="msg-actions">
+        <button className="msg-action" onClick={() => onToggleSaved(msg.id)}>
+          {isSaved ? "Saved" : "Save"}
+        </button>
+        <button className="msg-action" onClick={() => onCopy(msg.translationEn ?? msg.text ?? "")}>
+          Copy quote
+        </button>
+        <button className="msg-action" onClick={() => onCopy(citationFor(msg))}>
+          Copy citation
+        </button>
+      </div>
     </article>
   );
 }
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function MessageFeed({
   messages, briefing, healthStats, topEntities, hourlyData, nowStr, totalCount,
@@ -369,43 +470,52 @@ export default function MessageFeed({
   nowStr: string;
   totalCount: number;
 }) {
-  const searchParams  = useSearchParams();
-  const router        = useRouter();
-  const pathname      = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  // URL-driven filter state (default sig: "all" — don't silently hide content)
-  const topicKey      = searchParams.get("topic")   ?? "all";
-  const sourceKey     = searchParams.get("source")  ?? "all";
-  const sigKey        = searchParams.get("sig")     ?? "all";
-  const search        = searchParams.get("q")       ?? "";
+  const topicKey = searchParams.get("topic") ?? "all";
+  const sourceKey = searchParams.get("source") ?? "all";
+  const sigKey = searchParams.get("sig") ?? "all";
+  const search = searchParams.get("q") ?? "";
   const channelFilter = searchParams.get("channel") ?? "";
+  const viewParam = searchParams.get("view");
+  const viewMode: ViewMode = viewParam === "feed" || viewParam === "saved" ? viewParam : "stories";
 
-  const [lastVisit, setLastVisit]     = useState<Date | null>(null);
-  const [brifOpen, setBrifOpen]       = useState(true);
-  const [currentHour, setCurrentHour] = useState(0);
-  const [filterOpen, setFilterOpen]   = useState(false);
+  const [lastVisit] = useState<Date | null>(() => {
+    if (typeof window === "undefined") return null;
+    const stored = localStorage.getItem("osint_last_visit");
+    return stored ? new Date(stored) : null;
+  });
+  const [brifOpen, setBrifOpen] = useState(true);
+  const [currentHour] = useState(() => new Date().getUTCHours());
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [savedIds, setSavedIds] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    const saved = localStorage.getItem("osint_saved_posts");
+    if (!saved) return new Set();
+    try {
+      return new Set(JSON.parse(saved) as string[]);
+    } catch {
+      return new Set();
+    }
+  });
 
   useEffect(() => {
-    setCurrentHour(new Date().getUTCHours());
-    const stored = localStorage.getItem("osint_last_visit");
-    if (stored) setLastVisit(new Date(stored));
     localStorage.setItem("osint_last_visit", new Date().toISOString());
   }, []);
 
-  // Lock body scroll when mobile drawer is open
   useEffect(() => {
-    if (filterOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = filterOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [filterOpen]);
 
   const set = useCallback((key: string, val: string) => {
     const p = new URLSearchParams(searchParams.toString());
-    p.set(key, val);
-    router.replace(`${pathname}?${p.toString()}`, { scroll: false });
+    if (val) p.set(key, val);
+    else p.delete(key);
+    const qs = p.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [searchParams, router, pathname]);
 
   const handleChannelClick = useCallback((handle: string) => {
@@ -420,10 +530,24 @@ export default function MessageFeed({
     router.replace(pathname, { scroll: false });
   }, [router, pathname]);
 
-  // Filter logic
-  const tf  = TOPIC_OPTIONS.find((o) => o.key  === topicKey);
-  const sf  = SOURCE_OPTIONS.find((o) => o.key  === sourceKey);
-  const sgf = SIG_OPTIONS.find((o)   => o.key  === sigKey);
+  const toggleSaved = useCallback((id: string) => {
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      localStorage.setItem("osint_saved_posts", JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
+
+  const copyText = useCallback(async (text: string) => {
+    if (!text) return;
+    if (navigator.clipboard) await navigator.clipboard.writeText(text);
+  }, []);
+
+  const tf = TOPIC_OPTIONS.find((o) => o.key === topicKey);
+  const sf = SOURCE_OPTIONS.find((o) => o.key === sourceKey);
+  const sgf = SIG_OPTIONS.find((o) => o.key === sigKey);
   const sigMin = sgf?.min ?? 0;
 
   const hasActiveFilters = topicKey !== "all" || sourceKey !== "all" || sigKey !== "all" || search !== "" || channelFilter !== "";
@@ -431,17 +555,34 @@ export default function MessageFeed({
   const filtered = useMemo(() => {
     const sl = search.toLowerCase();
     return messages.filter((m) => {
-      if (tf?.topics  && (!m.topic || !(tf.topics  as readonly string[]).includes(m.topic)))  return false;
+      if (tf?.topics && (!m.topic || !(tf.topics as readonly string[]).includes(m.topic))) return false;
       if (sf?.categories && !(sf.categories as readonly string[]).includes(m.channel.category)) return false;
       if (channelFilter && m.channel.handle !== channelFilter) return false;
       if (sigMin > 0 && (SIG_RANK[m.significance ?? "medium"] ?? 1) < sigMin) return false;
       if (sl) {
-        const hay = [m.translationEn ?? "", m.summary ?? "", m.channel.nameEn ?? "", m.channel.handle].join(" ").toLowerCase();
+        const hay = [
+          m.translationEn ?? "",
+          m.summary ?? "",
+          m.text ?? "",
+          m.topic ?? "",
+          m.significance ?? "",
+          m.channel.nameEn ?? "",
+          m.channel.handle,
+          m.channel.category,
+          m.channel.stance,
+          m.channel.sourceType,
+          ...entityTerms(m),
+        ].join(" ").toLowerCase();
         if (!hay.includes(sl)) return false;
       }
       return true;
     });
   }, [messages, tf, sf, channelFilter, sigMin, search]);
+
+  const savedMessages = useMemo(
+    () => messages.filter((m) => savedIds.has(m.id)),
+    [messages, savedIds],
+  );
 
   const grouped = useMemo(() => {
     const map = new Map<string, MessageRow[]>();
@@ -462,17 +603,59 @@ export default function MessageFeed({
       const existing = map.get(key);
       if (existing) {
         existing.count += 1;
+        existing.messages.push(msg);
       } else {
-        map.set(key, { key, label: claimLabel(msg), count: 1 });
+        map.set(key, {
+          key,
+          label: claimLabel(msg),
+          count: 1,
+          messages: [msg],
+          channelCount: 1,
+          highCount: 0,
+          criticalCount: 0,
+          firstSeen: msg.postedAt,
+          latestSeen: msg.postedAt,
+          sourceMix: "",
+          verification: "",
+        });
       }
+    }
+
+    for (const cluster of map.values()) {
+      cluster.messages.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
+      const channels = new Set(cluster.messages.map((m) => m.channel.handle));
+      const categories = new Set(cluster.messages.map((m) => CATEGORY_LABELS[m.channel.category] ?? m.channel.category));
+      cluster.channelCount = channels.size;
+      cluster.highCount = cluster.messages.filter((m) => m.significance === "high").length;
+      cluster.criticalCount = cluster.messages.filter((m) => m.significance === "critical").length;
+      cluster.latestSeen = cluster.messages[0]?.postedAt ?? cluster.latestSeen;
+      cluster.firstSeen = cluster.messages[cluster.messages.length - 1]?.postedAt ?? cluster.firstSeen;
+      cluster.sourceMix = [...categories].slice(0, 3).join(", ");
+      cluster.verification =
+        cluster.channelCount >= 3 ? "cross-source signal" :
+        cluster.messages.some((m) => m.channel.category === "kremlin_official") ? "official claim" :
+        cluster.channelCount === 2 ? "two-source signal" :
+        "single-source signal";
     }
     return map;
   }, [messages]);
 
-  // Sparkline
+  const storyClusters = useMemo(() => {
+    const visibleKeys = new Set(filtered.map(claimKey));
+    return [...claimClusters.values()]
+      .filter((cluster) => visibleKeys.has(cluster.key))
+      .filter((cluster) => cluster.count > 1 || cluster.highCount > 0 || cluster.criticalCount > 0)
+      .sort((a, b) => {
+        const aScore = a.criticalCount * 100 + a.highCount * 20 + a.channelCount * 5 + a.count;
+        const bScore = b.criticalCount * 100 + b.highCount * 20 + b.channelCount * 5 + b.count;
+        if (aScore !== bScore) return bScore - aScore;
+        return new Date(b.latestSeen).getTime() - new Date(a.latestSeen).getTime();
+      })
+      .slice(0, 24);
+  }, [claimClusters, filtered]);
+
   const sparkMax = Math.max(...hourlyData.map((d) => d.count), 1);
 
-  // Counts for filter labels
   const topicCounts = useMemo(() => {
     const c: Record<string, number> = { all: messages.length };
     for (const opt of TOPIC_OPTIONS) {
@@ -495,13 +678,13 @@ export default function MessageFeed({
     return c;
   }, [messages]);
 
-  // Sidebar content (shared between desktop and mobile drawer)
+  const messageList = viewMode === "saved" ? savedMessages : filtered;
+
   const sidebarContent = (
     <>
-      {/* Mobile close button */}
       <button className="mob-close-btn" onClick={() => setFilterOpen(false)}>
         <span>Filters</span>
-        <span>✕ Close</span>
+        <span>Close</span>
       </button>
 
       <div className="side-section">
@@ -509,18 +692,18 @@ export default function MessageFeed({
         <div className="search-box">
           <input
             type="text"
-            placeholder="Translations, summaries…"
+            placeholder="Search translations, originals, entities..."
             value={search}
             onChange={(e) => set("q", e.target.value)}
           />
           {search && (
-            <button className="search-clear" onClick={() => set("q", "")} aria-label="Clear search">×</button>
+            <button className="search-clear" onClick={() => set("q", "")} aria-label="Clear search">x</button>
           )}
         </div>
         {channelFilter && (
           <div className="active-channel-chip">
             <span>@{channelFilter}</span>
-            <button onClick={() => set("channel", "")} aria-label="Clear channel filter">×</button>
+            <button onClick={() => set("channel", "")} aria-label="Clear channel filter">x</button>
           </div>
         )}
       </div>
@@ -582,20 +765,15 @@ export default function MessageFeed({
   return (
     <>
       <div className="layout">
-
-        {/* ── LEFT SIDEBAR ── */}
         <aside className={`sidebar${filterOpen ? " mob-open" : ""}`}>
           {sidebarContent}
         </aside>
 
-        {/* ── MAIN FEED ── */}
         <main className="main-col">
-
-          {/* Mobile filter button */}
           <button className="mob-filter-btn" onClick={() => setFilterOpen(true)}>
             {hasActiveFilters && <span className="mob-filter-dot" />}
-            ≡ Filters
-            {hasActiveFilters && <span style={{ color: "var(--blue)" }}>· active</span>}
+            Filters
+            {hasActiveFilters && <span style={{ color: "var(--blue)" }}>active</span>}
           </button>
 
           <div className="feed-head">
@@ -605,11 +783,10 @@ export default function MessageFeed({
                 <em style={{ fontStyle: "italic", color: "var(--ink-2)" }}>last 24 hours</em>
               </h1>
               <div className="feed-meta">
-                <b>{totalCount}</b> classified · {nowStr}
+                <b>{totalCount}</b> classified - {nowStr}
               </div>
             </div>
 
-            {/* Daily briefing */}
             {briefing && (
               <div className="briefing">
                 <div className="brf-head">
@@ -618,7 +795,7 @@ export default function MessageFeed({
                     <span className="when">generated {relTime(briefing.generatedAt)}</span>
                   </div>
                   <button className="brf-toggle" onClick={() => setBrifOpen((o) => !o)}>
-                    {brifOpen ? "▲ collapse" : "▼ expand"}
+                    {brifOpen ? "collapse" : "expand"}
                   </button>
                 </div>
                 {brifOpen && (
@@ -629,10 +806,9 @@ export default function MessageFeed({
               </div>
             )}
 
-            {/* Sparkline */}
             <div className="spark-row">
               <div>
-                <div className="spark-label">Message volume · last 24h UTC</div>
+                <div className="spark-label">Message volume - last 24h UTC</div>
                 <div className="spark">
                   {hourlyData.map(({ hour, count }) => {
                     const pct = Math.max(count > 0 ? 4 : 0, (count / sparkMax) * 100);
@@ -641,7 +817,7 @@ export default function MessageFeed({
                         key={hour}
                         className={hour === currentHour ? "cur" : ""}
                         style={{ height: `${pct}%` }}
-                        title={`${String(hour).padStart(2, "0")}:00 UTC — ${count} msgs`}
+                        title={`${String(hour).padStart(2, "0")}:00 UTC - ${count} msgs`}
                       />
                     );
                   })}
@@ -650,33 +826,42 @@ export default function MessageFeed({
               <div className="spark-count">
                 <div className="spark-label">Showing</div>
                 <div className="spark-count-num">
-                  {filtered.length} <span className="spark-count-total">of {totalCount}</span>
+                  {viewMode === "saved" ? savedMessages.length : filtered.length} <span className="spark-count-total">of {totalCount}</span>
                 </div>
               </div>
             </div>
+
+            <div className="view-tabs">
+              <button className={viewMode === "stories" ? "active" : ""} onClick={() => set("view", "")}>
+                Stories <span>{storyClusters.length}</span>
+              </button>
+              <button className={viewMode === "feed" ? "active" : ""} onClick={() => set("view", "feed")}>
+                Source feed <span>{filtered.length}</span>
+              </button>
+              <button className={viewMode === "saved" ? "active" : ""} onClick={() => set("view", "saved")}>
+                Saved <span>{savedMessages.length}</span>
+              </button>
+            </div>
           </div>
 
-          {/* Feed */}
-          {grouped.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "60px 0" }}>
-              <p style={{ color: "var(--ink-4)", fontFamily: "var(--mono)", fontSize: "13px" }}>
-                No messages match the current filters.
-              </p>
-              {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  style={{
-                    marginTop: 12, padding: "8px 16px",
-                    border: "1px solid var(--rule)", background: "none",
-                    fontFamily: "var(--mono)", fontSize: "11px",
-                    color: "var(--ink-3)", cursor: "pointer",
-                  }}
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
-          ) : (
+          {viewMode === "stories" ? (
+            storyClusters.length === 0 ? (
+              <EmptyState hasActiveFilters={hasActiveFilters} clearFilters={clearFilters} />
+            ) : (
+              <div className="story-list">
+                {storyClusters.map((cluster) => (
+                  <StoryClusterCard
+                    key={cluster.key}
+                    cluster={cluster}
+                    onOpenClaim={(label) => set("q", label.split("/").at(-1)?.trim() ?? label)}
+                    onCopy={copyText}
+                  />
+                ))}
+              </div>
+            )
+          ) : messageList.length === 0 ? (
+            <EmptyState hasActiveFilters={hasActiveFilters || viewMode === "saved"} clearFilters={viewMode === "saved" ? () => set("view", "") : clearFilters} />
+          ) : viewMode === "feed" ? (
             grouped.map(([cat, msgs]) => (
               <section key={cat} className="cat-group">
                 <div className="cat-head">
@@ -691,19 +876,39 @@ export default function MessageFeed({
                     activeChannel={channelFilter}
                     onChannelClick={handleChannelClick}
                     cluster={claimClusters.get(claimKey(m)) ?? null}
+                    isSaved={savedIds.has(m.id)}
+                    onToggleSaved={toggleSaved}
+                    onCopy={copyText}
                   />
                 ))}
               </section>
             ))
+          ) : (
+            <section className="cat-group">
+              <div className="cat-head">
+                <h2>Saved posts</h2>
+                <span className="ct">{savedMessages.length} saved</span>
+              </div>
+              {savedMessages.map((m) => (
+                <MessageCard
+                  key={m.id}
+                  msg={m}
+                  isNew={lastVisit !== null && new Date(m.postedAt) > lastVisit}
+                  activeChannel={channelFilter}
+                  onChannelClick={handleChannelClick}
+                  cluster={claimClusters.get(claimKey(m)) ?? null}
+                  isSaved={savedIds.has(m.id)}
+                  onToggleSaved={toggleSaved}
+                  onCopy={copyText}
+                />
+              ))}
+            </section>
           )}
-
         </main>
 
-        {/* ── RIGHT ASIDE ── */}
         <aside className="aside-col">
-
           <div className="aside-block">
-            <div className="aside-label">Top entities · today</div>
+            <div className="aside-label">Top entities - today</div>
             <div className="entity-cloud">
               {topEntities.map(({ name, count }) => (
                 <button
@@ -755,32 +960,62 @@ export default function MessageFeed({
                 and classified by topic, significance and entity.
               </p>
               <p>
-                Built for Nordic newsrooms and threat-intelligence analysts.
-                Public sources only — no Telegram API.
+                Built for journalists, researchers and security analysts working from
+                public sources. No Telegram API or private accounts are used.
               </p>
               <p>
-                <a href="/about">Methodology →</a>
-                {" · "}
-                <a href="/channels">Channels →</a>
+                <Link href="/about">Methodology</Link>
+                {" - "}
+                <Link href="/channels">Channels</Link>
               </p>
               <p>
                 <a href="https://github.com/Dimmu141/telegram-osint" target="_blank" rel="noopener noreferrer">
-                  GitHub ↗
+                  GitHub
                 </a>
-                {" · "}
-                <a href="/feed.xml" title="RSS feed">RSS ↗</a>
+                {" - "}
+                <a href="/feed.xml" title="RSS feed">RSS</a>
               </p>
             </div>
           </div>
-
         </aside>
-
       </div>
 
-      {/* Mobile overlay backdrop */}
       {filterOpen && (
         <div className="mob-overlay" onClick={() => setFilterOpen(false)} />
       )}
     </>
+  );
+}
+
+function EmptyState({
+  hasActiveFilters,
+  clearFilters,
+}: {
+  hasActiveFilters: boolean;
+  clearFilters: () => void;
+}) {
+  return (
+    <div style={{ textAlign: "center", padding: "60px 0" }}>
+      <p style={{ color: "var(--ink-4)", fontFamily: "var(--mono)", fontSize: "13px" }}>
+        No messages match the current view.
+      </p>
+      {hasActiveFilters && (
+        <button
+          onClick={clearFilters}
+          style={{
+            marginTop: 12,
+            padding: "8px 16px",
+            border: "1px solid var(--rule)",
+            background: "none",
+            fontFamily: "var(--mono)",
+            fontSize: "11px",
+            color: "var(--ink-3)",
+            cursor: "pointer",
+          }}
+        >
+          Clear filters
+        </button>
+      )}
+    </div>
   );
 }
