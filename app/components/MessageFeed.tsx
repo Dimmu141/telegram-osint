@@ -55,7 +55,10 @@ interface ClaimCluster {
   verification: string;
 }
 
-type ViewMode = "stories" | "feed" | "saved";
+type ViewMode = "now" | "stories" | "feed" | "saved";
+
+const NOW_WINDOW_HOURS = 6;
+const NOW_LIMIT = 20;
 
 const TOPIC_OPTIONS = [
   { label: "All topics", key: "all", topics: null },
@@ -185,6 +188,21 @@ function claimLabel(msg: MessageRow): string {
 
 function sourceTrust(category: string) {
   return sourceContextForCategory(category);
+}
+
+function isOfficialOrState(category: string): boolean {
+  return category === "kremlin_official" || category === "state_media";
+}
+
+function nowScore(msg: MessageRow, nowMs: number): number {
+  const ageHours = Math.max(0, (nowMs - new Date(msg.postedAt).getTime()) / 3_600_000);
+  const freshness = Math.max(0, NOW_WINDOW_HOURS - ageHours) * 20;
+  const relevance = (SIG_RANK[msg.significance ?? "medium"] ?? 1) * 14;
+  const officialRoutinePenalty =
+    isOfficialOrState(msg.channel.category) && (SIG_RANK[msg.significance ?? "medium"] ?? 1) < 2
+      ? 18
+      : 0;
+  return freshness + relevance - officialRoutinePenalty;
 }
 
 function citationFor(msg: MessageRow): string {
@@ -383,7 +401,10 @@ export default function MessageFeed({
   const search = searchParams.get("q") ?? "";
   const channelFilter = searchParams.get("channel") ?? "";
   const viewParam = searchParams.get("view");
-  const viewMode: ViewMode = viewParam === "feed" || viewParam === "saved" ? viewParam : "stories";
+  const viewMode: ViewMode =
+    viewParam === "stories" || viewParam === "feed" || viewParam === "saved"
+      ? viewParam
+      : "now";
 
   const [lastVisit] = useState<Date | null>(() => {
     if (typeof window === "undefined") return null;
@@ -392,6 +413,7 @@ export default function MessageFeed({
   });
   const [brifOpen, setBrifOpen] = useState(true);
   const [currentHour] = useState(() => new Date().getUTCHours());
+  const [nowMs] = useState(() => Date.now());
   const [filterOpen, setFilterOpen] = useState(false);
   const [savedIds, setSavedIds] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set();
@@ -488,6 +510,34 @@ export default function MessageFeed({
     [messages, savedIds],
   );
 
+  const nowData = useMemo(() => {
+    const cutoff = nowMs - NOW_WINDOW_HOURS * 60 * 60 * 1000;
+    const recent = filtered.filter((m) => new Date(m.postedAt).getTime() >= cutoff);
+    const meaningful = recent.filter((m) => {
+      const rank = SIG_RANK[m.significance ?? "medium"] ?? 1;
+      if (rank >= 2) return true;
+      return rank >= 1 && !isOfficialOrState(m.channel.category);
+    });
+    const source = meaningful.length > 0 ? meaningful : recent.length > 0 ? recent : filtered;
+    const reason =
+      meaningful.length > 0
+        ? `Showing fresh, relevant updates from the last ${NOW_WINDOW_HOURS} hours.`
+        : recent.length > 0
+          ? `No high-relevance updates in the last ${NOW_WINDOW_HOURS} hours. Showing the latest classified posts.`
+          : `No posts from the last ${NOW_WINDOW_HOURS} hours match the filters. Showing the newest available posts.`;
+
+    return {
+      reason,
+      messages: [...source]
+        .sort((a, b) => {
+          const scoreDelta = nowScore(b, nowMs) - nowScore(a, nowMs);
+          if (scoreDelta !== 0) return scoreDelta;
+          return new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime();
+        })
+        .slice(0, NOW_LIMIT),
+    };
+  }, [filtered, nowMs]);
+
   const grouped = useMemo(() => {
     const map = new Map<string, MessageRow[]>();
     for (const m of filtered) {
@@ -581,7 +631,7 @@ export default function MessageFeed({
     return c;
   }, [messages]);
 
-  const messageList = viewMode === "saved" ? savedMessages : filtered;
+  const messageList = viewMode === "saved" ? savedMessages : viewMode === "now" ? nowData.messages : filtered;
 
   const sidebarContent = (
     <>
@@ -733,14 +783,17 @@ export default function MessageFeed({
               <div className="spark-count">
                 <div className="spark-label">Showing</div>
                 <div className="spark-count-num">
-                  {viewMode === "saved" ? savedMessages.length : filtered.length} <span className="spark-count-total">of {totalCount}</span>
+                  {messageList.length} <span className="spark-count-total">of {totalCount}</span>
                 </div>
               </div>
             </div>
 
             <div className="view-tabs">
-              <button className={viewMode === "stories" ? "active" : ""} onClick={() => set("view", "")}>
-                Stories <span>{storyClusters.length}</span>
+              <button className={viewMode === "now" ? "active" : ""} onClick={() => set("view", "")}>
+                Now <span>{nowData.messages.length}</span>
+              </button>
+              <button className={viewMode === "stories" ? "active" : ""} onClick={() => set("view", "stories")}>
+                Top 24h <span>{storyClusters.length}</span>
               </button>
               <button className={viewMode === "feed" ? "active" : ""} onClick={() => set("view", "feed")}>
                 Source feed <span>{filtered.length}</span>
@@ -751,7 +804,28 @@ export default function MessageFeed({
             </div>
           </div>
 
-          {viewMode === "stories" ? (
+          {viewMode === "now" ? (
+            messageList.length === 0 ? (
+              <EmptyState hasActiveFilters={hasActiveFilters} clearFilters={clearFilters} />
+            ) : (
+              <section className="now-section">
+                <div className="now-note">{nowData.reason}</div>
+                {messageList.map((m) => (
+                  <MessageCard
+                    key={m.id}
+                    msg={m}
+                    isNew={lastVisit !== null && new Date(m.postedAt) > lastVisit}
+                    activeChannel={channelFilter}
+                    onChannelClick={handleChannelClick}
+                    cluster={claimClusters.get(claimKey(m)) ?? null}
+                    isSaved={savedIds.has(m.id)}
+                    onToggleSaved={toggleSaved}
+                    onCopy={copyText}
+                  />
+                ))}
+              </section>
+            )
+          ) : viewMode === "stories" ? (
             storyClusters.length === 0 ? (
               <EmptyState hasActiveFilters={hasActiveFilters} clearFilters={clearFilters} />
             ) : (

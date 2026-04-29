@@ -327,7 +327,7 @@ a { color: inherit; }
 /* ─── Category group ──────────────────────────────────────────────────────── */
 .view-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border: 1px solid var(--rule);
   background: var(--paper);
 }
@@ -353,6 +353,21 @@ a { color: inherit; }
   color: inherit;
   opacity: 0.62;
   margin-left: 6px;
+}
+
+.now-section { display: flex; flex-direction: column; gap: 0; }
+.now-note {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--ink);
+  background: var(--paper-2);
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  text-transform: uppercase;
 }
 
 .story-list { display: flex; flex-direction: column; gap: 14px; }
