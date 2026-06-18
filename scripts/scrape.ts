@@ -1,12 +1,33 @@
-import { runScrape } from "../lib/telegram-scraper";
+import {
+  loadChannelsFromYaml,
+  runScrape,
+  type ChannelConfig,
+} from "../lib/telegram-scraper";
+
+function uniqueChannels(channels: ChannelConfig[]): ChannelConfig[] {
+  const seen = new Set<string>();
+  const merged: ChannelConfig[] = [];
+
+  for (const channel of channels) {
+    if (seen.has(channel.handle)) continue;
+    seen.add(channel.handle);
+    merged.push(channel);
+  }
+
+  return merged;
+}
 
 async function main() {
   const args = process.argv.slice(2);
   const triggeredByArg = args.find((a) => a.startsWith("--triggered-by="));
   const triggeredBy = triggeredByArg?.split("=")[1] ?? "cli";
+  const baseChannels = loadChannelsFromYaml();
+  const expansionChannels = loadChannelsFromYaml("config/russian-expansion.yaml");
+  const channels = uniqueChannels([...baseChannels, ...expansionChannels]);
 
   console.log(`[scrape] Starting run, triggered by: ${triggeredBy}`);
-  const result = await runScrape({ triggeredBy });
+  console.log(`[scrape] Loaded ${channels.length} channel(s) from base + expansion configs`);
+  const result = await runScrape({ triggeredBy, channels });
 
   console.log(`[scrape] Run ${result.runId} complete`);
   console.log(`  duration:   ${(result.durationMs / 1000).toFixed(1)}s`);

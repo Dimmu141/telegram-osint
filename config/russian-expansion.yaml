@@ -1,0 +1,111 @@
+# Additional Russian Telegram sources.
+# Kept separate from config/channels.yaml so expansion candidates can be
+# reviewed, tuned, or removed without muddying the original curated list.
+
+- handle: ostorozhno_novosti
+  name_ru: "Ostorozhno, novosti"
+  name_en: "Ostorozhno, Novosti"
+  url: https://t.me/s/ostorozhno_novosti
+  category: tabloid
+  language: ru
+  stance: mixed
+  priority: tier_2
+  source_type: tabloid
+  notes: "Large Russian breaking-news aggregator. Useful for domestic incidents and early rumors; verify before treating as factual."
+  in_original_list: false
+
+- handle: astrapress
+  name_ru: "ASTRA"
+  name_en: "ASTRA"
+  url: https://t.me/s/astrapress
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_1
+  source_type: independent_media
+  notes: "Independent/exile outlet with frequent coverage of mobilization, strikes, repression, and Russian domestic war effects."
+  in_original_list: false
+
+- handle: agentstvonews
+  name_ru: "Agentstvo"
+  name_en: "Agentstvo"
+  url: https://t.me/s/agentstvonews
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_2
+  source_type: independent_media
+  notes: "Independent Russian investigative/news outlet. Good signal for elite politics and domestic consequences of the war."
+  in_original_list: false
+
+- handle: svobodnieslova
+  name_ru: "Verstka"
+  name_en: "Verstka"
+  url: https://t.me/s/svobodnieslova
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_2
+  source_type: independent_media
+  notes: "Independent Russian outlet focused on society, war effects, mobilization, and state pressure."
+  in_original_list: false
+
+- handle: mobilizationnews
+  name_ru: "Mobilization News"
+  name_en: "Mobilization News"
+  url: https://t.me/s/mobilizationnews
+  category: opposition
+  language: ru
+  stance: opposition
+  priority: tier_2
+  source_type: opposition_politician
+  notes: "Tracks mobilization, conscription, contract recruitment, and military-service pressure inside Russia."
+  in_original_list: false
+
+- handle: bbcrussian
+  name_ru: "BBC News Russian"
+  name_en: "BBC News Russian"
+  url: https://t.me/s/bbcrussian
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_2
+  source_type: independent_media
+  notes: "Reliable Russian-language international newsroom. Useful as a sober baseline beside Telegram-native sources."
+  in_original_list: false
+
+- handle: radiosvoboda
+  name_ru: "Radio Svoboda"
+  name_en: "Radio Svoboda"
+  url: https://t.me/s/radiosvoboda
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_2
+  source_type: independent_media
+  notes: "Russian-language RFE/RL coverage with strong regional, legal, and human-rights signal."
+  in_original_list: false
+
+- handle: novaya_pishet
+  name_ru: "Novaya Gazeta"
+  name_en: "Novaya Gazeta"
+  url: https://t.me/s/novaya_pishet
+  category: exile_independent
+  language: ru
+  stance: independent
+  priority: tier_2
+  source_type: independent_media
+  notes: "Independent Russian journalism; useful for repression, society, and anti-war context."
+  in_original_list: false
+
+- handle: RVvoenkor
+  name_ru: "Voenkory Russkoy Vesny"
+  name_en: "Russian Spring War Correspondents"
+  url: https://t.me/s/RVvoenkor
+  category: milblogger_frontline
+  language: ru
+  stance: pro_kremlin
+  priority: tier_2
+  source_type: milblogger
+  notes: "Large pro-war frontline channel. Useful for Z-channel claims and battlefield narratives; verify heavily."
+  in_original_list: false

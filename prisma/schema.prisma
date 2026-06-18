@@ -21,6 +21,11 @@ model Channel {
   notes             String?
   inOriginalList    Boolean   @default(false)
   lastScrapedAt     DateTime?
+  lastParsedCount   Int       @default(0)
+  lastNewMessageAt  DateTime?
+  lastNewMessages   Int       @default(0)
+  lastEmptyScrapeAt DateTime?
+  lastScrapeWarning String?
   consecutiveErrors Int       @default(0)
   lastError         String?
   isActive          Boolean   @default(true)

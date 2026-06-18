@@ -1,12 +1,15 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { parseEntities } from "@/lib/editorial";
 import MessageFeed, { type MessageRow, type HealthStats } from "./components/MessageFeed";
 
 export const revalidate = 300;
 
 export default async function Home() {
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const today = now.toISOString().slice(0, 10);
 
   const [
     messages,
@@ -15,6 +18,7 @@ export default async function Home() {
     queueDepth,
     classifiedToday,
     todayBriefing,
+    activeChannelCount,
   ] = await Promise.all([
     prisma.message.findMany({
       where: {
@@ -33,7 +37,15 @@ export default async function Home() {
         entities: true,
         summary: true,
         postedAt: true,
-        channel: { select: { handle: true, nameEn: true, category: true } },
+        channel: {
+          select: {
+            handle: true,
+            nameEn: true,
+            category: true,
+            stance: true,
+            sourceType: true,
+          },
+        },
       },
     }),
     prisma.scrapeRun.findFirst({
@@ -53,20 +65,18 @@ export default async function Home() {
       where: { date: today },
       select: { bullets: true, generatedAt: true },
     }),
+    prisma.channel.count({ where: { isActive: true } }),
   ]);
 
-  // Compute rows
   const rows: MessageRow[] = messages.map((m) => ({
     ...m,
     postedAt: m.postedAt.toISOString(),
   }));
 
-  // Top entities (server-side aggregation)
   const entityCounts = new Map<string, number>();
   for (const m of messages) {
-    const ents = m.entities as { people?: string[]; locations?: string[]; organizations?: string[] } | null;
-    if (!ents) continue;
-    for (const list of [ents.people ?? [], ents.locations ?? [], ents.organizations ?? []]) {
+    const ents = parseEntities(m.entities);
+    for (const list of [ents.people, ents.locations, ents.organizations, ents.weapons]) {
       for (const e of list) {
         if (e.length > 1) entityCounts.set(e, (entityCounts.get(e) ?? 0) + 1);
       }
@@ -77,7 +87,6 @@ export default async function Home() {
     .slice(0, 15)
     .map(([name, count]) => ({ name, count }));
 
-  // Hourly data (server-side)
   const hourlyMap = new Map<number, number>();
   for (let h = 0; h < 24; h++) hourlyMap.set(h, 0);
   for (const m of messages) {
@@ -93,7 +102,7 @@ export default async function Home() {
     lastClassifiedAt: latestClassify?.llmProcessedAt?.toISOString() ?? null,
     queueDepth,
     classifiedToday,
-    totalChannels: 63,
+    totalChannels: activeChannelCount,
   };
 
   const briefing = todayBriefing
@@ -110,39 +119,40 @@ export default async function Home() {
 
   return (
     <>
-      {/* ── Top bar (server-rendered, CSS animation via globals.css) ── */}
       <header className="topbar">
         <div className="topbar-inner">
-          <a href="/" className="brand">
+          <Link href="/" className="brand">
             <div className="brand-mark">tg</div>
             <div>
               <div className="brand-name">Telegram OSINT</div>
-              <div className="brand-sub">public · open source</div>
+              <div className="brand-sub">public - open source</div>
             </div>
-          </a>
+          </Link>
           <div className="top-status">
             <div className="stat"><span className="dot" /> <b>live</b></div>
             <div className="stat">
-              scraped <b>{healthStats.lastScrapedAt ? formatRelativeServer(healthStats.lastScrapedAt) : "—"}</b>
+              scraped <b>{healthStats.lastScrapedAt ? formatRelativeServer(healthStats.lastScrapedAt) : "-"}</b>
             </div>
             <div className="stat">
-              classified <b>{healthStats.lastClassifiedAt ? formatRelativeServer(healthStats.lastClassifiedAt) : "—"}</b>
+              classified <b>{healthStats.lastClassifiedAt ? formatRelativeServer(healthStats.lastClassifiedAt) : "-"}</b>
             </div>
             <div className="stat">queue <b>{queueDepth}</b></div>
-            <div className="stat"><b>{healthStats.totalChannels}</b> channels · <b>{classifiedToday}</b> today</div>
+            <div className="stat"><b>{healthStats.totalChannels}</b> channels - <b>{classifiedToday}</b> today</div>
           </div>
           <div className="top-actions">
-            <a href="/channels" className="nav-link">Channels</a>
-            <a href="/about" className="nav-link">About</a>
+            <Link href="/channels" className="nav-link">Channels</Link>
+            <Link href="/narratives" className="nav-link">Narratives</Link>
+            <Link href="/status" className="nav-link">Status</Link>
+            <Link href="/about" className="nav-link">About</Link>
             <a href="/feed.xml" className="nav-link" title="RSS feed">RSS</a>
-            <a href="https://github.com/Dimmu141/telegram-osint" target="_blank" rel="noopener noreferrer" className="icon-btn" title="GitHub">↗</a>
+            <a href="https://github.com/Dimmu141/telegram-osint" target="_blank" rel="noopener noreferrer" className="icon-btn" title="GitHub">GH</a>
           </div>
         </div>
       </header>
 
       <Suspense fallback={
         <div style={{ padding: "40px", fontFamily: "var(--mono)", fontSize: "12px", color: "var(--ink-4)" }}>
-          Loading feed…
+          Loading feed...
         </div>
       }>
         <MessageFeed
